@@ -87,16 +87,20 @@ fun VipScreen(
     val vipTitle by billingManager.vipTitle.collectAsState()
 
     var isCheckingRestore by remember { mutableStateOf(false) }
+    var lastShownMsg by remember { mutableStateOf<String?>(null) }
 
-    // Show status messages from the billing manager
+    // Show status messages exactly once per change
     LaunchedEffect(statusMsg) {
-        statusMsg?.let { message ->
-            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        val msg = statusMsg
+        if (!msg.isNullOrBlank() && msg != lastShownMsg) {
+            lastShownMsg = msg
+            Toast.makeText(context, msg, Toast.LENGTH_LONG).show()
         }
     }
 
-    // Refresh price from Myket when the screen opens
+    // Refresh price and connection status whenever the screen opens
     LaunchedEffect(Unit) {
+        billingManager.bindToBillingService()
         billingManager.fetchVipProductDetails()
     }
 
@@ -148,7 +152,6 @@ fun VipScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Golden VIP Hero Badge
                 item {
                     Surface(
                         modifier = Modifier.fillMaxWidth(),
@@ -204,7 +207,6 @@ fun VipScreen(
                     }
                 }
 
-                // Perks List Title
                 item {
                     Text(
                         text = "مزایای اشتراک ویژه",
@@ -215,7 +217,6 @@ fun VipScreen(
                     )
                 }
 
-                // Perks List
                 items(perks.size) { index ->
                     val perk = perks[index]
                     PersianCard {
@@ -252,14 +253,13 @@ fun VipScreen(
                     }
                 }
 
-                // Purchase Actions
                 item {
                     if (!isVip) {
                         Column(
                             modifier = Modifier.fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
-                            // Status message from billing manager
+                            // Live status banner while connecting / purchasing
                             if (billingStatus == BillingStatus.PURCHASING ||
                                 billingStatus == BillingStatus.CONNECTING
                             ) {
@@ -268,19 +268,58 @@ fun VipScreen(
                                     color = VipGold.copy(alpha = 0.15f),
                                     modifier = Modifier.fillMaxWidth()
                                 ) {
-                                    Text(
-                                        text = statusMsg ?: "در حال ارتباط با درگاه پرداخت مایکت...",
-                                        color = VipGold,
-                                        fontSize = 12.sp,
-                                        textAlign = TextAlign.Center,
+                                    Row(
                                         modifier = Modifier
                                             .fillMaxWidth()
-                                            .padding(10.dp)
+                                            .padding(10.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                        horizontalArrangement = Arrangement.Center
+                                    ) {
+                                        CircularProgressIndicator(
+                                            modifier = Modifier.size(14.dp),
+                                            color = VipGold,
+                                            strokeWidth = 2.dp
+                                        )
+                                        Spacer(modifier = Modifier.width(8.dp))
+                                        Text(
+                                            text = statusMsg ?: "در حال ارتباط با سرویس مایکت...",
+                                            color = VipGold,
+                                            fontSize = 12.sp,
+                                            textAlign = TextAlign.Center
+                                        )
+                                    }
+                                }
+                            }
+
+                            // If disconnected — show a retry connection button
+                            if (billingStatus == BillingStatus.DISCONNECTED ||
+                                billingStatus == BillingStatus.FAILED ||
+                                billingStatus == BillingStatus.IDLE
+                            ) {
+                                OutlinedButton(
+                                    onClick = {
+                                        billingManager.bindToBillingService()
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(42.dp),
+                                    shape = RoundedCornerShape(10.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Refresh,
+                                        contentDescription = null,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(6.dp))
+                                    Text(
+                                        "اتصال دوباره به مایکت",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp
                                     )
                                 }
                             }
 
-                            // PRICE DISPLAY — fetched live from Myket, never hard-coded
+                            // Price card
                             if (vipPrice != null) {
                                 Surface(
                                     shape = RoundedCornerShape(12.dp),
@@ -317,42 +356,30 @@ fun VipScreen(
                                         )
                                     }
                                 }
-                            } else if (billingStatus == BillingStatus.CONNECTING) {
-                                // Still loading price
-                                Row(
-                                    modifier = Modifier.fillMaxWidth(),
-                                    horizontalArrangement = Arrangement.Center,
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
-                                    CircularProgressIndicator(
-                                        modifier = Modifier.size(16.dp),
-                                        color = VipGold,
-                                        strokeWidth = 2.dp
-                                    )
-                                    Spacer(modifier = Modifier.width(8.dp))
-                                    Text(
-                                        text = "در حال دریافت قیمت از مایکت...",
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                        fontSize = 11.sp
-                                    )
-                                }
                             }
 
+                            // Buy button
                             Button(
                                 onClick = {
                                     val activity = context as? Activity
-                                    if (activity != null) {
-                                        billingManager.initiatePurchase(activity)
-                                    } else {
+                                    if (activity == null) {
                                         Toast.makeText(
                                             context,
                                             "خطا: Activity پیدا نشد",
                                             Toast.LENGTH_SHORT
                                         ).show()
+                                        return@Button
                                     }
+                                    // If not connected, try to bind first
+                                    if (billingStatus == BillingStatus.DISCONNECTED ||
+                                        billingStatus == BillingStatus.FAILED
+                                    ) {
+                                        billingManager.bindToBillingService()
+                                    }
+                                    billingManager.initiatePurchase(activity)
                                 },
-                                enabled = billingStatus != BillingStatus.PURCHASING &&
-                                        billingStatus != BillingStatus.CONNECTING,
+                                // Only disable while actively purchasing
+                                enabled = billingStatus != BillingStatus.PURCHASING,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(54.dp)
@@ -360,28 +387,31 @@ fun VipScreen(
                                 shape = RoundedCornerShape(14.dp),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = VipGold,
-                                    contentColor = Color(0xFF1E1A11)
+                                    contentColor = Color(0xFF1E1A11),
+                                    disabledContainerColor = VipGold.copy(alpha = 0.4f),
+                                    disabledContentColor = Color(0xFF1E1A11).copy(alpha = 0.6f)
                                 )
                             ) {
                                 Icon(Icons.Default.Star, null, modifier = Modifier.size(20.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = if (vipPrice != null)
-                                        "خرید اشتراک ویژه — $vipPrice"
-                                    else
-                                        "خرید اشتراک ویژه از مایکت",
+                                    text = when {
+                                        billingStatus == BillingStatus.PURCHASING -> "در حال پردازش خرید..."
+                                        vipPrice != null -> "خرید اشتراک ویژه — $vipPrice"
+                                        else -> "خرید اشتراک ویژه از مایکت"
+                                    },
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
 
+                            // Restore button
                             OutlinedButton(
                                 onClick = {
                                     if (!isCheckingRestore) {
                                         isCheckingRestore = true
-                                        billingManager.restorePurchases { success, message ->
+                                        billingManager.restorePurchases { _, _ ->
                                             isCheckingRestore = false
-                                            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
                                         }
                                     }
                                 },

@@ -14,6 +14,9 @@ import com.android.vending.billing.IInAppBillingService
 import com.example.data.datastore.KeyboardPreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -42,9 +45,10 @@ class MyketBillingManager(
         const val BILLING_API_VERSION = 3
         const val REQUEST_CODE_PURCHASE = 1001
         private const val TAG = "MyketBillingManager"
+        private const val CONNECTION_TIMEOUT_MS = 6000L
     }
 
-    private val scope = CoroutineScope(Dispatchers.IO)
+    private val scope = CoroutineScope(Dispatchers.IO + SupervisorJob())
 
     private val _billingStatus = MutableStateFlow(BillingStatus.IDLE)
     val billingStatus: StateFlow<BillingStatus> = _billingStatus.asStateFlow()
@@ -52,26 +56,25 @@ class MyketBillingManager(
     private val _statusMessage = MutableStateFlow<String?>(null)
     val statusMessage: StateFlow<String?> = _statusMessage.asStateFlow()
 
-    // Fetched price from Myket — never hard-coded
     private val _vipPrice = MutableStateFlow<String?>(null)
     val vipPrice: StateFlow<String?> = _vipPrice.asStateFlow()
 
-    // Title from Myket (optional, for display)
     private val _vipTitle = MutableStateFlow<String?>(null)
     val vipTitle: StateFlow<String?> = _vipTitle.asStateFlow()
 
     private var billingService: IInAppBillingService? = null
     private var isConnected = false
+    private var hasBound = false
     private var pendingActivity: Activity? = null
+    private var timeoutJob: Job? = null
 
     private val serviceConnection = object : ServiceConnection {
         override fun onServiceConnected(name: ComponentName?, service: IBinder?) {
+            timeoutJob?.cancel()
             billingService = IInAppBillingService.Stub.asInterface(service)
             isConnected = true
             _billingStatus.value = BillingStatus.CONNECTED
             Log.d(TAG, "Myket billing service connected")
-
-            // Fetch product details (price, title) as soon as we connect
             fetchVipProductDetails()
         }
 
@@ -79,7 +82,26 @@ class MyketBillingManager(
             billingService = null
             isConnected = false
             _billingStatus.value = BillingStatus.DISCONNECTED
-            Log.d(TAG, "Myket billing service disconnected")
+            _statusMessage.value = "ارتباط با سرویس مایکت قطع شد."
+            Log.w(TAG, "Myket billing service disconnected")
+        }
+
+        override fun onBindingDied(name: ComponentName?) {
+            billingService = null
+            isConnected = false
+            hasBound = false
+            _billingStatus.value = BillingStatus.DISCONNECTED
+            _statusMessage.value = "اتصال به مایکت از دست رفت. لطفاً دوباره تلاش کنید."
+            Log.e(TAG, "Myket billing binding died")
+        }
+
+        override fun onNullBinding(name: ComponentName?) {
+            billingService = null
+            isConnected = false
+            hasBound = false
+            _billingStatus.value = BillingStatus.FAILED
+            _statusMessage.value = "سرویس مایکت پاسخ نداد. مطمئن شوید آخرین نسخه مایکت نصب است."
+            Log.e(TAG, "Myket billing returned null binding")
         }
     }
 
@@ -87,30 +109,62 @@ class MyketBillingManager(
         bindToBillingService()
     }
 
-    private fun bindToBillingService() {
+    /**
+     * Attempts to bind to the Myket billing service.
+     * Sets a timeout so the UI never stays stuck in CONNECTING forever.
+     */
+    fun bindToBillingService() {
+        if (isConnected) {
+            Log.d(TAG, "Already connected, skipping bind")
+            return
+        }
+
+        if (!isMyketInstalled()) {
+            _billingStatus.value = BillingStatus.FAILED
+            _statusMessage.value = "برنامه مایکت روی دستگاه شما نصب نیست. ابتدا مایکت را نصب کنید."
+            Log.w(TAG, "Myket app not installed")
+            return
+        }
+
         try {
             val intent = Intent(BILLING_SERVICE_ACTION).apply {
                 setPackage(MYKET_PACKAGE)
             }
+
             _billingStatus.value = BillingStatus.CONNECTING
-            context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+            _statusMessage.value = "در حال اتصال به سرویس مایکت..."
+
+            val bound = context.bindService(intent, serviceConnection, Context.BIND_AUTO_CREATE)
+            hasBound = bound
+
+            if (!bound) {
+                Log.e(TAG, "bindService returned false — service not found")
+                _billingStatus.value = BillingStatus.FAILED
+                _statusMessage.value = "سرویس پرداخت مایکت در دسترس نیست. لطفاً مایکت را به‌روزرسانی کنید."
+                return
+            }
+
+            // Timeout guard: if onServiceConnected never fires, don't stay stuck.
+            timeoutJob?.cancel()
+            timeoutJob = scope.launch {
+                delay(CONNECTION_TIMEOUT_MS)
+                if (!isConnected) {
+                    Log.e(TAG, "Timeout while waiting for Myket billing service")
+                    _billingStatus.value = BillingStatus.DISCONNECTED
+                    _statusMessage.value = "زمان اتصال به مایکت به پایان رسید. لطفاً دوباره تلاش کنید."
+                }
+            }
+
         } catch (e: Exception) {
             Log.e(TAG, "Failed to bind to Myket billing service", e)
             _billingStatus.value = BillingStatus.FAILED
+            _statusMessage.value = "خطا در اتصال به مایکت: ${e.localizedMessage}"
         }
     }
 
-    /**
-     * Fetches the VIP product price and title directly from Myket's servers.
-     * The result is exposed via [vipPrice] and [vipTitle] StateFlows.
-     * This is safe to call multiple times — it will refresh the cached values.
-     */
     fun fetchVipProductDetails() {
         val service = billingService
-        if (service == null || !isConnected) {
-            Log.w(TAG, "fetchVipProductDetails: service not connected, will retry after connection")
-            return
-        }
+        if (service == null || !isConnected) return
 
         scope.launch {
             try {
@@ -127,35 +181,25 @@ class MyketBillingManager(
 
                 val responseCode = skuDetails.getInt("RESPONSE_CODE", -1)
                 if (responseCode != 0) {
-                    Log.e(TAG, "getSkuDetails failed with response code: $responseCode")
+                    Log.e(TAG, "getSkuDetails failed: $responseCode")
                     return@launch
                 }
 
-                val detailsList: ArrayList<String>? =
-                    skuDetails.getStringArrayList("DETAILS_LIST")
+                val detailsList = skuDetails.getStringArrayList("DETAILS_LIST") ?: return@launch
 
-                if (detailsList.isNullOrEmpty()) {
-                    Log.w(TAG, "getSkuDetails returned empty DETAILS_LIST")
-                    return@launch
-                }
-
-                // Parse the JSON for our SKU
                 for (detailsJson in detailsList) {
                     val json = JSONObject(detailsJson)
-                    val productId = json.optString("productId")
-                    if (productId == SKU_VIP_PRO) {
+                    if (json.optString("productId") == SKU_VIP_PRO) {
                         val price = json.optString("price", "")
                         val title = json.optString("title", "")
                         _vipPrice.value = price.ifBlank { null }
                         _vipTitle.value = title.ifBlank { null }
-                        Log.d(TAG, "Fetched VIP price from Myket: $price")
+                        Log.d(TAG, "Fetched VIP price: $price")
                         break
                     }
                 }
-            } catch (e: RemoteException) {
-                Log.e(TAG, "RemoteException while fetching SKU details", e)
             } catch (e: Exception) {
-                Log.e(TAG, "Error parsing SKU details", e)
+                Log.e(TAG, "Error fetching SKU details", e)
             }
         }
     }
@@ -169,51 +213,43 @@ class MyketBillingManager(
         }
     }
 
-    /**
-     * Check if the Myket billing API version is supported.
-     */
     private fun isBillingSupported(): Boolean {
         val service = billingService ?: return false
         return try {
-            val response = service.isBillingSupported(
-                BILLING_API_VERSION,
-                context.packageName,
-                "inapp"
-            )
-            response == 0 // BILLING_RESPONSE_RESULT_OK
+            service.isBillingSupported(BILLING_API_VERSION, context.packageName, "inapp") == 0
         } catch (e: RemoteException) {
             Log.e(TAG, "Error checking billing support", e)
             false
         }
     }
 
-    /**
-     * Start the purchase flow for the VIP product.
-     * This sends a real IAP request to Myket via the bound billing service.
-     */
     fun initiatePurchase(activity: Activity) {
+        // 1. Myket installed?
         if (!isMyketInstalled()) {
             _billingStatus.value = BillingStatus.FAILED
-            _statusMessage.value = "برنامه مایکت روی دستگاه شما نصب نیست. برای خرید VIP ابتدا مایکت را نصب کنید."
+            _statusMessage.value = "برنامه مایکت نصب نیست. برای خرید VIP ابتدا مایکت را نصب کنید."
             return
         }
 
+        // 2. Service bound?
         if (billingService == null || !isConnected) {
             _billingStatus.value = BillingStatus.FAILED
-            _statusMessage.value = "اتصال به سرویس پرداخت مایکت برقرار نشد. لطفاً دوباره تلاش کنید."
+            _statusMessage.value = "در حال اتصال مجدد به سرویس مایکت... لطفاً یک لحظه صبر کنید و دوباره تلاش کنید."
+            // Trigger a fresh bind attempt
             bindToBillingService()
             return
         }
 
+        // 3. Billing supported?
         if (!isBillingSupported()) {
             _billingStatus.value = BillingStatus.FAILED
-            _statusMessage.value = "نسخه خرید درون‌برنامه‌ای مایکت پشتیبانی نمی‌شود."
+            _statusMessage.value = "خرید درون‌برنامه‌ای در این نسخه از مایکت پشتیبانی نمی‌شود."
             return
         }
 
         pendingActivity = activity
         _billingStatus.value = BillingStatus.PURCHASING
-        _statusMessage.value = "در حال اتصال به درگاه پرداخت مایکت..."
+        _statusMessage.value = "در حال باز کردن صفحه پرداخت مایکت..."
 
         try {
             val service = billingService ?: return
@@ -231,12 +267,13 @@ class MyketBillingManager(
 
             if (responseCode != 0) {
                 _billingStatus.value = BillingStatus.FAILED
-                _statusMessage.value = "خطا در دریافت اطلاعات خرید. کد خطا: $responseCode"
-                Log.e(TAG, "getBuyIntent failed with response code: $responseCode")
+                _statusMessage.value = "خطای مایکت در شروع خرید (کد $responseCode)."
+                Log.e(TAG, "getBuyIntent failed: $responseCode")
                 return
             }
 
-            val pendingIntent: PendingIntent? = buyIntentBundle.getParcelable("BUY_INTENT")
+            val pendingIntent: PendingIntent? =
+                buyIntentBundle.getParcelable("BUY_INTENT")
 
             if (pendingIntent != null) {
                 activity.startIntentSenderForResult(
@@ -247,13 +284,13 @@ class MyketBillingManager(
                 )
             } else {
                 _billingStatus.value = BillingStatus.FAILED
-                _statusMessage.value = "خطا در باز کردن صفحه پرداخت مایکت."
+                _statusMessage.value = "صفحه پرداخت مایکت باز نشد."
             }
 
         } catch (e: RemoteException) {
             Log.e(TAG, "RemoteException during purchase", e)
             _billingStatus.value = BillingStatus.FAILED
-            _statusMessage.value = "خطا در ارتباط با سرویس مایکت: ${e.localizedMessage}"
+            _statusMessage.value = "خطا در ارتباط با مایکت: ${e.localizedMessage}"
         } catch (e: Exception) {
             Log.e(TAG, "Exception during purchase", e)
             _billingStatus.value = BillingStatus.FAILED
@@ -261,9 +298,6 @@ class MyketBillingManager(
         }
     }
 
-    /**
-     * Handle the result returned from the Myket purchase activity.
-     */
     fun handlePurchaseResult(
         requestCode: Int,
         resultCode: Int,
@@ -280,7 +314,7 @@ class MyketBillingManager(
                 return verifyAndActivatePurchase(purchaseData, dataSignature)
             } else {
                 _billingStatus.value = BillingStatus.FAILED
-                _statusMessage.value = "خرید لغو شد یا خطایی رخ داد. کد: $responseCode"
+                _statusMessage.value = "خرید لغو شد یا خطایی رخ داد (کد $responseCode)."
             }
         } else {
             _billingStatus.value = BillingStatus.IDLE
@@ -291,13 +325,22 @@ class MyketBillingManager(
 
     fun restorePurchases(onComplete: (Boolean, String) -> Unit) {
         if (!isMyketInstalled()) {
-            onComplete(false, "برنامه مایکت روی دستگاه شما نصب نیست.")
+            onComplete(false, "برنامه مایکت روی دستگاه نصب نیست.")
             return
         }
 
-        val service = billingService
-        if (service == null || !isConnected) {
-            onComplete(false, "اتصال به سرویس مایکت برقرار نشد.")
+        // Force a fresh bind attempt if not connected yet.
+        if (billingService == null || !isConnected) {
+            bindToBillingService()
+            onComplete(
+                false,
+                "در حال اتصال به سرویس مایکت... چند لحظه بعد دوباره «بازیابی خرید» را بزنید."
+            )
+            return
+        }
+
+        val service = billingService ?: run {
+            onComplete(false, "سرویس مایکت آماده نیست.")
             return
         }
 
@@ -314,17 +357,19 @@ class MyketBillingManager(
 
                 if (responseCode != 0) {
                     _billingStatus.value = BillingStatus.FAILED
-                    onComplete(false, "خطا در دریافت اطلاعات خرید. کد: $responseCode")
+                    onComplete(false, "خطا در دریافت اطلاعات خرید (کد $responseCode).")
                     return@launch
                 }
 
-                val purchaseDataList = purchasesBundle.getStringArrayList("INAPP_PURCHASE_DATA_LIST")
-                val signatureList = purchasesBundle.getStringArrayList("INAPP_DATA_SIGNATURE_LIST")
+                val purchaseDataList =
+                    purchasesBundle.getStringArrayList("INAPP_PURCHASE_DATA_LIST")
+                val signatureList =
+                    purchasesBundle.getStringArrayList("INAPP_DATA_SIGNATURE_LIST")
 
-                if (purchaseDataList != null && signatureList != null) {
+                if (!purchaseDataList.isNullOrEmpty() && !signatureList.isNullOrEmpty()) {
                     for (i in purchaseDataList.indices) {
                         val purchaseData = purchaseDataList[i]
-                        val signature = signatureList[i]
+                        val signature = signatureList.getOrNull(i) ?: continue
 
                         if (verifyAndActivatePurchase(purchaseData, signature)) {
                             _billingStatus.value = BillingStatus.RESTORED
@@ -357,11 +402,8 @@ class MyketBillingManager(
         if (isValid) {
             try {
                 val json = JSONObject(purchaseData)
-                val productId = json.optString("productId")
-                if (productId == SKU_VIP_PRO) {
-                    scope.launch {
-                        preferences.setVipStatus(true)
-                    }
+                if (json.optString("productId") == SKU_VIP_PRO) {
+                    scope.launch { preferences.setVipStatus(true) }
                     _billingStatus.value = BillingStatus.SUCCESS
                     _statusMessage.value = "تبریک! اشتراک VIP شما با موفقیت فعال شد."
                     return true
@@ -377,12 +419,14 @@ class MyketBillingManager(
     }
 
     fun destroy() {
-        if (isConnected) {
+        timeoutJob?.cancel()
+        if (hasBound) {
             try {
                 context.unbindService(serviceConnection)
             } catch (_: Exception) {}
-            isConnected = false
-            billingService = null
         }
+        hasBound = false
+        isConnected = false
+        billingService = null
     }
 }
