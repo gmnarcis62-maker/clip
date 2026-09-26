@@ -121,11 +121,6 @@ fun VipScreen(
             icon = Icons.Default.AutoAwesome
         ),
         VipPerk(
-            title = "حذف کامل تبلیغات",
-            description = "تجربه‌ای بدون تبلیغات و مزاحمت با عملکرد سریع‌تر و روان‌تر.",
-            icon = Icons.Default.LockOpen
-        ),
-        VipPerk(
             title = "پشتیبانی اختصاصی VIP",
             description = "پشتیبانی سریع و اختصاصی از کاربران VIP و دسترسی زودتر به قابلیت‌های جدید.",
             icon = Icons.Default.Star
