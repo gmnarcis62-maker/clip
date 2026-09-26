@@ -432,7 +432,7 @@ fun VipScreen(
                             }
 
                             Text(
-                                text = "شناسه محصول: ${MyketBillingManager.SKU_VIP_PRO}\n" +
+                                text = "" +
                                         "پرداخت از طریق برنامه مایکت انجام می‌شود و پس از تأیید، اشتراک شما بلافاصله فعال می‌گردد.",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 11.sp,
