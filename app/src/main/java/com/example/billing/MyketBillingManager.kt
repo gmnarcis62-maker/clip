@@ -52,6 +52,14 @@ class MyketBillingManager(
     private val _statusMessage = MutableStateFlow<String?>(null)
     val statusMessage: StateFlow<String?> = _statusMessage.asStateFlow()
 
+    // Fetched price from Myket — never hard-coded
+    private val _vipPrice = MutableStateFlow<String?>(null)
+    val vipPrice: StateFlow<String?> = _vipPrice.asStateFlow()
+
+    // Title from Myket (optional, for display)
+    private val _vipTitle = MutableStateFlow<String?>(null)
+    val vipTitle: StateFlow<String?> = _vipTitle.asStateFlow()
+
     private var billingService: IInAppBillingService? = null
     private var isConnected = false
     private var pendingActivity: Activity? = null
@@ -62,6 +70,9 @@ class MyketBillingManager(
             isConnected = true
             _billingStatus.value = BillingStatus.CONNECTED
             Log.d(TAG, "Myket billing service connected")
+
+            // Fetch product details (price, title) as soon as we connect
+            fetchVipProductDetails()
         }
 
         override fun onServiceDisconnected(name: ComponentName?) {
@@ -86,6 +97,66 @@ class MyketBillingManager(
         } catch (e: Exception) {
             Log.e(TAG, "Failed to bind to Myket billing service", e)
             _billingStatus.value = BillingStatus.FAILED
+        }
+    }
+
+    /**
+     * Fetches the VIP product price and title directly from Myket's servers.
+     * The result is exposed via [vipPrice] and [vipTitle] StateFlows.
+     * This is safe to call multiple times — it will refresh the cached values.
+     */
+    fun fetchVipProductDetails() {
+        val service = billingService
+        if (service == null || !isConnected) {
+            Log.w(TAG, "fetchVipProductDetails: service not connected, will retry after connection")
+            return
+        }
+
+        scope.launch {
+            try {
+                val querySkus = Bundle().apply {
+                    putStringArrayList("ITEM_ID_LIST", arrayListOf(SKU_VIP_PRO))
+                }
+
+                val skuDetails: Bundle = service.getSkuDetails(
+                    BILLING_API_VERSION,
+                    context.packageName,
+                    "inapp",
+                    querySkus
+                )
+
+                val responseCode = skuDetails.getInt("RESPONSE_CODE", -1)
+                if (responseCode != 0) {
+                    Log.e(TAG, "getSkuDetails failed with response code: $responseCode")
+                    return@launch
+                }
+
+                val detailsList: ArrayList<String>? =
+                    skuDetails.getStringArrayList("DETAILS_LIST")
+
+                if (detailsList.isNullOrEmpty()) {
+                    Log.w(TAG, "getSkuDetails returned empty DETAILS_LIST")
+                    return@launch
+                }
+
+                // Parse the JSON for our SKU
+                for (detailsJson in detailsList) {
+                    val json = JSONObject(detailsJson)
+                    val productId = json.optString("productId")
+                    if (productId == SKU_VIP_PRO) {
+                        val price = json.optString("price", "")
+                        val title = json.optString("title", "")
+                        _vipPrice.value = price.ifBlank { null }
+                        _vipTitle.value = title.ifBlank { null }
+                        Log.d(TAG, "Fetched VIP price from Myket: $price")
+                        break
+                    }
+                }
+            } catch (e: RemoteException) {
+                Log.e(TAG, "RemoteException while fetching SKU details", e)
+            } catch (e: Exception) {
+                Log.e(TAG, "Error parsing SKU details", e)
+            }
         }
     }
 
@@ -130,7 +201,6 @@ class MyketBillingManager(
         if (billingService == null || !isConnected) {
             _billingStatus.value = BillingStatus.FAILED
             _statusMessage.value = "اتصال به سرویس پرداخت مایکت برقرار نشد. لطفاً دوباره تلاش کنید."
-            // Try to reconnect
             bindToBillingService()
             return
         }
@@ -147,8 +217,6 @@ class MyketBillingManager(
 
         try {
             val service = billingService ?: return
-
-            // Generate a unique developer payload for security
             val developerPayload = "mersana_vip_${System.currentTimeMillis()}"
 
             val buyIntentBundle: Bundle = service.getBuyIntent(
@@ -161,7 +229,7 @@ class MyketBillingManager(
 
             val responseCode = buyIntentBundle.getInt("RESPONSE_CODE", -1)
 
-            if (responseCode != 0) { // 0 = BILLING_RESPONSE_RESULT_OK
+            if (responseCode != 0) {
                 _billingStatus.value = BillingStatus.FAILED
                 _statusMessage.value = "خطا در دریافت اطلاعات خرید. کد خطا: $responseCode"
                 Log.e(TAG, "getBuyIntent failed with response code: $responseCode")
@@ -195,7 +263,6 @@ class MyketBillingManager(
 
     /**
      * Handle the result returned from the Myket purchase activity.
-     * Call this from your Activity's onActivityResult.
      */
     fun handlePurchaseResult(
         requestCode: Int,

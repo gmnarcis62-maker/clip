@@ -25,10 +25,10 @@ import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.LockOpen
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -83,6 +83,8 @@ fun VipScreen(
     val isVip by preferences.isVip.collectAsState(initial = false)
     val billingStatus by billingManager.billingStatus.collectAsState()
     val statusMsg by billingManager.statusMessage.collectAsState()
+    val vipPrice by billingManager.vipPrice.collectAsState()
+    val vipTitle by billingManager.vipTitle.collectAsState()
 
     var isCheckingRestore by remember { mutableStateOf(false) }
 
@@ -93,6 +95,11 @@ fun VipScreen(
         }
     }
 
+    // Refresh price from Myket when the screen opens
+    LaunchedEffect(Unit) {
+        billingManager.fetchVipProductDetails()
+    }
+
     val perks = listOf(
         VipPerk(
             title = "پوسته‌های اختصاصی و نامحدود",
@@ -101,7 +108,7 @@ fun VipScreen(
         ),
         VipPerk(
             title = "تاریخچه نامحدود کلیپ‌بورد",
-            description = "ذخیره بینهایت متن کپی‌شده بدون محدودیت زمانی و تعدادی در حافظه دستگاه.",
+            description = "ذخیره بی‌نهایت متن کپی‌شده بدون محدودیت زمانی و تعدادی در حافظه دستگاه.",
             icon = Icons.Default.ContentPaste
         ),
         VipPerk(
@@ -273,6 +280,64 @@ fun VipScreen(
                                 }
                             }
 
+                            // PRICE DISPLAY — fetched live from Myket, never hard-coded
+                            if (vipPrice != null) {
+                                Surface(
+                                    shape = RoundedCornerShape(12.dp),
+                                    color = VipGold.copy(alpha = 0.10f),
+                                    border = androidx.compose.foundation.BorderStroke(
+                                        1.dp, VipGold.copy(alpha = 0.5f)
+                                    ),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Column(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(14.dp),
+                                        horizontalAlignment = Alignment.CenterHorizontally
+                                    ) {
+                                        Text(
+                                            text = vipTitle ?: "اشتراک ویژه مرسانا",
+                                            color = MaterialTheme.colorScheme.onSurface,
+                                            fontSize = 12.sp,
+                                            fontWeight = FontWeight.Medium
+                                        )
+                                        Spacer(modifier = Modifier.height(6.dp))
+                                        Text(
+                                            text = vipPrice ?: "",
+                                            color = VipGold,
+                                            fontSize = 22.sp,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                        Spacer(modifier = Modifier.height(4.dp))
+                                        Text(
+                                            text = "قیمت لحظه‌ای از مایکت",
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            fontSize = 10.sp
+                                        )
+                                    }
+                                }
+                            } else if (billingStatus == BillingStatus.CONNECTING) {
+                                // Still loading price
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.Center,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        color = VipGold,
+                                        strokeWidth = 2.dp
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = "در حال دریافت قیمت از مایکت...",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = 11.sp
+                                    )
+                                }
+                            }
+
                             Button(
                                 onClick = {
                                     val activity = context as? Activity
@@ -301,7 +366,10 @@ fun VipScreen(
                                 Icon(Icons.Default.Star, null, modifier = Modifier.size(20.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "خرید اشتراک ویژه از مایکت",
+                                    text = if (vipPrice != null)
+                                        "خرید اشتراک ویژه — $vipPrice"
+                                    else
+                                        "خرید اشتراک ویژه از مایکت",
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold
                                 )
