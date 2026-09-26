@@ -13,7 +13,6 @@ enum class KeyboardLanguage {
 
 object KeyboardLayouts {
 
-    // Persian Primary Layout (with dedicated number row at top)
     fun getPersianRows(
         isShifted: Boolean = false,
         usePersianNumbers: Boolean = true,
@@ -23,7 +22,6 @@ object KeyboardLayouts {
         val englishDigits = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0")
         val digits = if (usePersianNumbers) persianDigits else englishDigits
 
-        // Top number row with backspace at the end
         val numberRow = digits.map { digit ->
             KeyItem(label = digit, output = digit, weight = 1.0f)
         } + listOf(
@@ -55,13 +53,14 @@ object KeyboardLayouts {
             )
         }
 
-        // Row 1: ض ص ث ق ف غ ع ه خ ح ج چ (12 letters)
-        val row1Letters = listOf("ض", "ص", "ث", "ق", "ف", "غ", "ع", "ه", "خ", "ح", "ج", "چ")
+        // ✅ ردیف ۱: راست → ج ، چپ → ض
+        //    ترتیب چپ به راست روی صفحه: ض ص ث ق ف غ ع ه خ ح ج
+        //    (چون RTL، اولین آیتم لیست = راست)
+        val row1Letters = listOf("ج", "ح", "خ", "ه", "ع", "غ", "ف", "ق", "ث", "ص", "ض")
         val row1 = row1Letters.map { char ->
             val popups = when (char) {
                 "ه" -> listOf("ة", "ۀ", "ه")
-                "ج" -> listOf("[", "{", "ج")
-                "چ" -> listOf("]", "}", "چ")
+                "ج" -> listOf("چ", "[", "{", "ج")
                 "ص" -> listOf("ض", "ص")
                 "ع" -> listOf("غ", "ع")
                 "ف" -> listOf("ق", "ف")
@@ -75,8 +74,8 @@ object KeyboardLayouts {
             )
         }
 
-        // Row 2: ش س ی ب ل ا ت ن م ک گ (11 letters)
-        val row2Letters = listOf("ش", "س", "ی", "ب", "ل", "ا", "ت", "ن", "م", "ک", "گ")
+        // ✅ ردیف ۲: راست → گ ، چپ → ش
+        val row2Letters = listOf("گ", "ک", "م", "ن", "ت", "ا", "ل", "ب", "ی", "س", "ش")
         val row2 = row2Letters.map { char ->
             val popups = when (char) {
                 "ا" -> listOf("آ", "أ", "إ", "ء", "ا")
@@ -97,22 +96,20 @@ object KeyboardLayouts {
             )
         }
 
-        // Row 3: Shift + ظ ط ز ر د ذ ژ پ و (no backspace here — it's on the number row)
-        val row3 = mutableListOf<KeyItem>()
-        row3.add(KeyItem(label = "⇧", type = KeyType.SHIFT, weight = 1.5f))
-
-        val row3Letters = listOf(
-            KeyItem(label = "ظ", output = "ظ", popupOptions = listOf("ط", "ظ")),
-            KeyItem(label = "ط", output = "ط", popupOptions = listOf("ظ", "ط")),
-            KeyItem(label = "ز", output = "ز", popupOptions = listOf("ژ", "ز")),
-            KeyItem(label = "ر", output = "ر"),
+        // ✅ ردیف ۳: راست → . ، چپ → ظ
+        val row3 = listOf(
+            KeyItem(label = ".", output = ".", popupOptions = listOf(".", "،", "…", ":", "!")),
+            KeyItem(label = "چ", output = "چ", popupOptions = listOf("ج", "چ")),
+            KeyItem(label = "و", output = "و", popupOptions = listOf("ؤ", "و")),
+            KeyItem(label = "پ", output = "پ", popupOptions = listOf("ب", "پ")),
             KeyItem(label = "د", output = "د", popupOptions = listOf("ذ", "د")),
-            KeyItem(label = "ذ", output = "ذ"),
-            KeyItem(label = "ژ", output = "ژ"),
-            KeyItem(label = "پ", output = "پ", popupOptions = listOf("پ", "ب")),
-            KeyItem(label = "و", output = "و", popupOptions = listOf("ؤ", "و"))
+            KeyItem(label = "ذ", output = "ذ", popupOptions = listOf("د", "ذ")),
+            KeyItem(label = "ر", output = "ر"),
+            KeyItem(label = "ز", output = "ز", popupOptions = listOf("ژ", "ز")),
+            KeyItem(label = "ژ", output = "ژ", popupOptions = listOf("ز", "ژ")),
+            KeyItem(label = "ط", output = "ط", popupOptions = listOf("ظ", "ط")),
+            KeyItem(label = "ظ", output = "ظ", popupOptions = listOf("ط", "ظ"))
         )
-        row3.addAll(row3Letters)
 
         return listOf(
             numberRow,
@@ -123,7 +120,6 @@ object KeyboardLayouts {
         )
     }
 
-    // English Primary Layout (QWERTY Desktop Style)
     fun getEnglishRows(
         isShifted: Boolean = false,
         isCapsLock: Boolean = false
@@ -164,7 +160,6 @@ object KeyboardLayouts {
         )
     }
 
-    // Numbers & Desktop Keypad Style Layout
     fun getNumbersRows(
         usePersianDigits: Boolean = true,
         isPersian: Boolean = true
@@ -175,15 +170,12 @@ object KeyboardLayouts {
             listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0")
         }
 
-        // Row 1: 1 2 3 4 5 6 7 8 9 0
         val row1 = d.map { KeyItem(label = it, output = it) }
 
-        // Row 2: @ # $ % & - + ( ) /
         val row2 = listOf("@", "#", "$", "%", "&", "-", "+", "(", ")", "/").map {
             KeyItem(label = it, output = it)
         }
 
-        // Row 3: =#\ * " ' : ; ! ؟ (or ?) Backspace
         val questionMark = if (isPersian) "؟" else "?"
         val row3 = listOf(
             KeyItem(label = "=#\\", type = KeyType.MODE_SWITCH, weight = 1.3f),
@@ -197,7 +189,6 @@ object KeyboardLayouts {
             KeyItem(label = "⌫", type = KeyType.BACKSPACE, weight = 1.3f)
         )
 
-        // Bottom Row
         val textSwitchLabel = if (isPersian) "حروف" else "ABC"
         val commaChar = if (isPersian) "،" else ","
         val bottomRow = listOf(
@@ -212,7 +203,6 @@ object KeyboardLayouts {
         return listOf(row1, row2, row3, bottomRow)
     }
 
-    // Extended Desktop Symbols Layout
     fun getSymbolsRows(
         usePersianDigits: Boolean = true,
         isPersian: Boolean = true

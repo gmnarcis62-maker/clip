@@ -50,6 +50,14 @@
             </intent-filter>
         </activity>
 
+        <!-- ✅ Activity برای استودیو تبدیل عکس به هنر متنی -->
+        <activity
+            android:name=".ime.TextArtPickerActivity"
+            android:exported="false"
+            android:label="استودیو هنر متنی"
+            android:theme="@style/Theme.MyApplication"
+            android:windowSoftInputMode="adjustResize" />
+
         <!-- Standard Android InputMethodService -->
         <service
             android:name=".ime.ClipbordIME"

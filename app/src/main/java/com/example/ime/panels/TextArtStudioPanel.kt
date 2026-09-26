@@ -5,14 +5,11 @@ import android.content.ClipboardManager
 import android.content.Context
 import android.content.Intent
 import android.graphics.Bitmap
-import android.net.Uri
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.PickVisualMediaRequest
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -21,7 +18,6 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -35,7 +31,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.Send
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Image
@@ -65,7 +60,6 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.domain.smart.ExpressionCenterData
@@ -73,10 +67,8 @@ import com.example.domain.smart.SocialMode
 import com.example.domain.smart.TextArtConfig
 import com.example.domain.smart.TextArtEngine
 import com.example.domain.smart.TextArtStyle
+import com.example.ime.TextArtPickerActivity
 import com.example.themes.KeyboardTheme
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 enum class TextArtViewTab {
     PREVIEW_TEXT,
@@ -105,33 +97,6 @@ fun TextArtStudioPanel(
     var contrastValue by remember { mutableFloatStateOf(1.0f) }
     var subjectOnlyEnabled by remember { mutableStateOf(false) }
     var aspectCorrectionEnabled by remember { mutableStateOf(true) }
-
-    // Photo picker launcher
-    val photoPickerLauncher = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.PickVisualMedia()
-    ) { uri: Uri? ->
-        if (uri != null) {
-            scope.launch {
-                isProcessing = true
-                val loadedBitmap = withContext(Dispatchers.IO) {
-                    try {
-                        context.contentResolver.openInputStream(uri)?.use { stream ->
-                            TextArtEngine.decodeSafeBitmapFromStream(stream, 280)
-                        }
-                    } catch (e: Exception) {
-                        null
-                    }
-                }
-                if (loadedBitmap != null) {
-                    currentBitmap = loadedBitmap
-                    selectedPresetName = "gallery_custom"
-                } else {
-                    Toast.makeText(context, "خطا در بارگذاری تصویر", Toast.LENGTH_SHORT).show()
-                }
-                isProcessing = false
-            }
-        }
-    }
 
     // Initialize with heart preset
     LaunchedEffect(selectedPresetName) {
@@ -166,7 +131,7 @@ fun TextArtStudioPanel(
         "heart" to "❤️ قلب",
         "star" to "⭐ ستاره",
         "cat" to "🐱 گربه",
-        "flower" to "🌸 گل",
+        "flower" to "🌻 گل",
         "car" to "🚗 ماشین",
         "portrait" to "👤 پرتره"
     )
@@ -232,7 +197,7 @@ fun TextArtStudioPanel(
                         )
                         Spacer(modifier = Modifier.width(3.dp))
                         Text(
-                            text = "تنظیمات و شبکه اجتماعی",
+                            text = "تنظیمات",
                             color = if (activeTab == TextArtViewTab.SETTINGS) theme.accentTextColor else theme.keySubTextColor,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
@@ -253,18 +218,34 @@ fun TextArtStudioPanel(
                 .padding(vertical = 2.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // ✅ Gallery button now opens a dedicated Activity instead of using
+            // rememberLauncherForActivityResult (which crashes in an IME context)
             Button(
                 onClick = {
-                    photoPickerLauncher.launch(
-                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
-                    )
+                    try {
+                        val intent = Intent(context, TextArtPickerActivity::class.java).apply {
+                            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+                        }
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        Toast.makeText(
+                            context,
+                            "خطا در باز کردن استودیو عکس",
+                            Toast.LENGTH_SHORT
+                        ).show()
+                    }
                 },
                 shape = RoundedCornerShape(6.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = theme.specialKeyBackgroundColor),
                 modifier = Modifier.height(28.dp),
                 contentPadding = PaddingValues(horizontal = 8.dp)
             ) {
-                Icon(Icons.Default.Image, contentDescription = null, tint = theme.keyTextColor, modifier = Modifier.size(13.dp))
+                Icon(
+                    Icons.Default.Image,
+                    contentDescription = null,
+                    tint = theme.keyTextColor,
+                    modifier = Modifier.size(13.dp)
+                )
                 Spacer(modifier = Modifier.width(4.dp))
                 Text("گالری", color = theme.keyTextColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
             }
@@ -280,10 +261,11 @@ fun TextArtStudioPanel(
                     Surface(
                         shape = RoundedCornerShape(6.dp),
                         color = if (isSel) theme.accentColor.copy(alpha = 0.25f) else theme.keyBackgroundColor,
-                        border = BorderStroke(0.5.dp, if (isSel) theme.accentColor else theme.keyTopHighlightColor),
-                        modifier = Modifier.clickable {
-                            selectedPresetName = key
-                        }
+                        border = BorderStroke(
+                            0.5.dp,
+                            if (isSel) theme.accentColor else theme.keyTopHighlightColor
+                        ),
+                        modifier = Modifier.clickable { selectedPresetName = key }
                     ) {
                         Text(
                             text = label,
@@ -302,14 +284,18 @@ fun TextArtStudioPanel(
                 .fillMaxWidth()
                 .weight(1f)
                 .background(theme.keyBackgroundColor, RoundedCornerShape(8.dp))
-                .borderSafe(0.5.dp, theme.keyTopHighlightColor)
+                .border(0.5.dp, theme.keyTopHighlightColor, RoundedCornerShape(8.dp))
                 .padding(4.dp)
         ) {
             when (activeTab) {
                 TextArtViewTab.PREVIEW_TEXT -> {
                     if (isProcessing) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                            CircularProgressIndicator(color = theme.accentColor, modifier = Modifier.size(24.dp), strokeWidth = 2.dp)
+                            CircularProgressIndicator(
+                                color = theme.accentColor,
+                                modifier = Modifier.size(24.dp),
+                                strokeWidth = 2.dp
+                            )
                         }
                     } else {
                         val vScroll = rememberScrollState()
@@ -350,10 +336,14 @@ fun TextArtStudioPanel(
                             .padding(4.dp),
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        // Styles
-                        Text("سبک تبدیل (Style):", color = theme.keySubTextColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            "سبک تبدیل (Style):",
+                            color = theme.keySubTextColor,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            items(TextArtStyle.values()) { style ->
+                            items(TextArtStyle.values().toList()) { style ->
                                 val isSelected = style == selectedStyle
                                 Surface(
                                     shape = RoundedCornerShape(6.dp),
@@ -370,10 +360,14 @@ fun TextArtStudioPanel(
                             }
                         }
 
-                        // Social Mode
-                        Text("بهینه‌سازی شبکه اجتماعی (Social Mode):", color = theme.keySubTextColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                        Text(
+                            "بهینه‌سازی شبکه اجتماعی:",
+                            color = theme.keySubTextColor,
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
                         LazyRow(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                            items(SocialMode.values()) { mode ->
+                            items(SocialMode.values().toList()) { mode ->
                                 val isSelected = mode == selectedSocialMode
                                 Surface(
                                     shape = RoundedCornerShape(6.dp),
@@ -390,7 +384,6 @@ fun TextArtStudioPanel(
                             }
                         }
 
-                        // Subject Only & Contrast
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically,
@@ -402,7 +395,7 @@ fun TextArtStudioPanel(
                                 modifier = Modifier.clickable { subjectOnlyEnabled = !subjectOnlyEnabled }
                             ) {
                                 Text(
-                                    text = if (subjectOnlyEnabled) "✓ فقط سوژه اصلی (حذف پس‌زمینه)" else "فقط سوژه اصلی",
+                                    text = if (subjectOnlyEnabled) "✓ فقط سوژه اصلی" else "فقط سوژه اصلی",
                                     color = if (subjectOnlyEnabled) theme.accentTextColor else theme.keyTextColor,
                                     fontSize = 10.sp,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
@@ -410,13 +403,20 @@ fun TextArtStudioPanel(
                             }
 
                             Row(verticalAlignment = Alignment.CenterVertically) {
-                                Text("کنتراست: ${String.format("%.1f", contrastValue)}", color = theme.keySubTextColor, fontSize = 10.sp)
+                                Text(
+                                    "کنتراست: ${String.format("%.1f", contrastValue)}",
+                                    color = theme.keySubTextColor,
+                                    fontSize = 10.sp
+                                )
                                 Slider(
                                     value = contrastValue,
                                     onValueChange = { contrastValue = it },
                                     valueRange = 0.6f..1.8f,
                                     modifier = Modifier.width(100.dp),
-                                    colors = SliderDefaults.colors(thumbColor = theme.accentColor, activeTrackColor = theme.accentColor)
+                                    colors = SliderDefaults.colors(
+                                        thumbColor = theme.accentColor,
+                                        activeTrackColor = theme.accentColor
+                                    )
                                 )
                             }
                         }
@@ -427,7 +427,7 @@ fun TextArtStudioPanel(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Bottom Action Bar: Copy, Insert, Share, Favorite
+        // Bottom Action Bar
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -437,7 +437,7 @@ fun TextArtStudioPanel(
                 onClick = {
                     val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
                     cm?.setPrimaryClip(ClipData.newPlainText("text_art", textArtResult))
-                    Toast.makeText(context, "هنر متنی در کلیپبورد کپی شد", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(context, "هنر متنی در کلیپ‌بورد کپی شد", Toast.LENGTH_SHORT).show()
                 },
                 colors = ButtonDefaults.buttonColors(containerColor = theme.specialKeyBackgroundColor),
                 shape = RoundedCornerShape(6.dp),
@@ -446,7 +446,12 @@ fun TextArtStudioPanel(
                     .height(30.dp),
                 contentPadding = PaddingValues(horizontal = 6.dp)
             ) {
-                Icon(Icons.Default.ContentCopy, contentDescription = null, tint = theme.keyTextColor, modifier = Modifier.size(13.dp))
+                Icon(
+                    Icons.Default.ContentCopy,
+                    contentDescription = null,
+                    tint = theme.keyTextColor,
+                    modifier = Modifier.size(13.dp)
+                )
                 Spacer(modifier = Modifier.width(3.dp))
                 Text("کپی", color = theme.keyTextColor, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             }
@@ -463,7 +468,12 @@ fun TextArtStudioPanel(
                     .height(30.dp),
                 contentPadding = PaddingValues(horizontal = 6.dp)
             ) {
-                Icon(Icons.AutoMirrored.Filled.Send, contentDescription = null, tint = theme.accentTextColor, modifier = Modifier.size(13.dp))
+                Icon(
+                    Icons.AutoMirrored.Filled.Send,
+                    contentDescription = null,
+                    tint = theme.accentTextColor,
+                    modifier = Modifier.size(13.dp)
+                )
                 Spacer(modifier = Modifier.width(3.dp))
                 Text("درج در متن", color = theme.accentTextColor, fontSize = 11.sp, fontWeight = FontWeight.Bold)
             }
@@ -473,7 +483,6 @@ fun TextArtStudioPanel(
                     val sendIntent = Intent(Intent.ACTION_SEND).apply {
                         putExtra(Intent.EXTRA_TEXT, textArtResult)
                         type = "text/plain"
-                        flags = Intent.FLAG_ACTIVITY_NEW_TASK
                     }
                     val chooser = Intent.createChooser(sendIntent, "ارسال هنر متنی").apply {
                         flags = Intent.FLAG_ACTIVITY_NEW_TASK
@@ -485,7 +494,12 @@ fun TextArtStudioPanel(
                 modifier = Modifier.size(30.dp),
                 contentPadding = PaddingValues(0.dp)
             ) {
-                Icon(Icons.Default.Share, contentDescription = "اشتراک‌گذاری", tint = theme.keyTextColor, modifier = Modifier.size(13.dp))
+                Icon(
+                    Icons.Default.Share,
+                    contentDescription = "اشتراک‌گذاری",
+                    tint = theme.keyTextColor,
+                    modifier = Modifier.size(13.dp)
+                )
             }
 
             Button(
@@ -498,12 +512,13 @@ fun TextArtStudioPanel(
                 modifier = Modifier.size(30.dp),
                 contentPadding = PaddingValues(0.dp)
             ) {
-                Icon(Icons.Default.Star, contentDescription = "برگزیده", tint = theme.accentColor, modifier = Modifier.size(14.dp))
+                Icon(
+                    Icons.Default.Star,
+                    contentDescription = "برگزیده",
+                    tint = theme.accentColor,
+                    modifier = Modifier.size(14.dp)
+                )
             }
         }
     }
 }
-
-// Simple modifier helper for safe borders
-private fun Modifier.borderSafe(width: androidx.compose.ui.unit.Dp, color: androidx.compose.ui.graphics.Color) =
-    this.then(BorderStroke(width, color).let { BorderStroke(width, color) }.let { Modifier })

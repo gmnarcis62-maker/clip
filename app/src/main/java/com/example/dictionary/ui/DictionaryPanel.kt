@@ -91,7 +91,7 @@ fun DictionaryPanel(
     var searchResults by remember { mutableStateOf<List<DictionaryItemResult>>(emptyList()) }
     var selectedEntry by remember { mutableStateOf<DictionaryEntry?>(null) }
     var selectedPersonalEntry by remember { mutableStateOf<PersonalDictionaryEntry?>(null) }
-    var selectedTab by remember { mutableIntStateOf(0) } // 0: Search/All, 1: Persian, 2: English, 3: Favorites, 4: History, 5: Personal
+    var selectedTab by remember { mutableIntStateOf(0) }
     var wordOfTheDay by remember { mutableStateOf<DictionaryEntry?>(null) }
 
     // Personal add dialog state
@@ -179,29 +179,53 @@ fun DictionaryPanel(
 
         // Search Input Bar (when not in detail view)
         if (selectedEntry == null && selectedPersonalEntry == null) {
-            Spacer(modifier = Modifier.height(3.dp))
+            Spacer(modifier = Modifier.height(4.dp))
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
+                // ✅ ارتفاع کادر جستجو افزایش یافت تا متن کامل نمایش داده شود
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = onSearchQueryChange,
-                    placeholder = { Text("جستجوی واژه یا معنی...", fontSize = 11.sp, color = theme.keySubTextColor) },
+                    placeholder = {
+                        Text(
+                            text = "جستجوی واژه یا معنی...",
+                            fontSize = 12.sp,
+                            color = theme.keySubTextColor
+                        )
+                    },
                     leadingIcon = {
-                        Icon(Icons.Default.Search, null, tint = theme.accentColor, modifier = Modifier.size(16.dp))
+                        Icon(
+                            Icons.Default.Search,
+                            null,
+                            tint = theme.accentColor,
+                            modifier = Modifier.size(18.dp)
+                        )
                     },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { onSearchQueryChange("") }, modifier = Modifier.size(24.dp)) {
-                                Icon(Icons.Default.Close, null, tint = theme.keySubTextColor, modifier = Modifier.size(14.dp))
+                            IconButton(
+                                onClick = { onSearchQueryChange("") },
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    null,
+                                    tint = theme.keySubTextColor,
+                                    modifier = Modifier.size(16.dp)
+                                )
                             }
                         }
                     },
                     modifier = Modifier
                         .weight(1f)
-                        .height(42.dp),
-                    shape = RoundedCornerShape(8.dp),
+                        .height(54.dp),
+                    shape = RoundedCornerShape(10.dp),
+                    textStyle = androidx.compose.ui.text.TextStyle(
+                        fontSize = 13.sp,
+                        color = theme.keyTextColor
+                    ),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = theme.accentColor,
                         unfocusedBorderColor = theme.keyBackgroundColor,
@@ -214,7 +238,7 @@ fun DictionaryPanel(
                 )
             }
 
-            Spacer(modifier = Modifier.height(3.dp))
+            Spacer(modifier = Modifier.height(4.dp))
 
             // Navigation Tabs
             LazyRow(
@@ -236,7 +260,7 @@ fun DictionaryPanel(
                             color = if (isSelected) theme.accentTextColor else theme.keyTextColor,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Medium,
-                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp)
+                            modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp)
                         )
                     }
                 }
@@ -262,7 +286,6 @@ fun DictionaryPanel(
                             modifier = Modifier.fillMaxWidth()
                         ) {
                             Column(modifier = Modifier.padding(10.dp)) {
-                                // Header with pronunciation & actions
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -313,7 +336,6 @@ fun DictionaryPanel(
 
                                 Spacer(modifier = Modifier.height(4.dp))
 
-                                // Tags Row (Part of speech, Root, Plural)
                                 Row(
                                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                                     modifier = Modifier.fillMaxWidth()
@@ -348,7 +370,6 @@ fun DictionaryPanel(
 
                                 Spacer(modifier = Modifier.height(6.dp))
 
-                                // Definition
                                 Text(
                                     text = "📖 معنی: ${entry.definition}",
                                     color = theme.keyTextColor,
@@ -356,7 +377,6 @@ fun DictionaryPanel(
                                     lineHeight = 18.sp
                                 )
 
-                                // Synonyms
                                 if (entry.synonyms.isNotEmpty()) {
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
@@ -366,7 +386,6 @@ fun DictionaryPanel(
                                     )
                                 }
 
-                                // Antonyms
                                 if (entry.antonyms.isNotEmpty() && entry.antonyms != "-") {
                                     Spacer(modifier = Modifier.height(2.dp))
                                     Text(
@@ -376,7 +395,6 @@ fun DictionaryPanel(
                                     )
                                 }
 
-                                // English translation
                                 if (entry.englishTranslation.isNotEmpty()) {
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
@@ -387,7 +405,6 @@ fun DictionaryPanel(
                                     )
                                 }
 
-                                // Example
                                 if (entry.examples.isNotEmpty()) {
                                     Spacer(modifier = Modifier.height(4.dp))
                                     Text(
@@ -399,7 +416,6 @@ fun DictionaryPanel(
 
                                 Spacer(modifier = Modifier.height(8.dp))
 
-                                // Action Buttons Row (Insert & Copy)
                                 Row(
                                     modifier = Modifier.fillMaxWidth(),
                                     horizontalArrangement = Arrangement.spacedBy(6.dp)
@@ -437,7 +453,6 @@ fun DictionaryPanel(
 
                                 Spacer(modifier = Modifier.height(6.dp))
 
-                                // Ask AI Button
                                 Surface(
                                     shape = RoundedCornerShape(6.dp),
                                     color = Color(0xFFFFB800).copy(alpha = 0.15f),
@@ -674,7 +689,7 @@ fun DictionaryPanel(
                                     value = newPersonalWord,
                                     onValueChange = { newPersonalWord = it },
                                     placeholder = { Text("واژه...", fontSize = 10.sp, color = theme.keySubTextColor) },
-                                    modifier = Modifier.fillMaxWidth().height(38.dp),
+                                    modifier = Modifier.fillMaxWidth().height(44.dp),
                                     singleLine = true
                                 )
                                 Spacer(modifier = Modifier.height(3.dp))
@@ -682,7 +697,7 @@ fun DictionaryPanel(
                                     value = newPersonalDefinition,
                                     onValueChange = { newPersonalDefinition = it },
                                     placeholder = { Text("معنی یا تعریف شخصی...", fontSize = 10.sp, color = theme.keySubTextColor) },
-                                    modifier = Modifier.fillMaxWidth().height(38.dp),
+                                    modifier = Modifier.fillMaxWidth().height(44.dp),
                                     singleLine = true
                                 )
                                 Spacer(modifier = Modifier.height(4.dp))
