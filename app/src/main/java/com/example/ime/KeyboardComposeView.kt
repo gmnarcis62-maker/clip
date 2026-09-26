@@ -84,6 +84,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -133,6 +134,7 @@ import com.example.ime.panels.MoreToolsHubPanel
 import com.example.ime.panels.TextArtStudioPanel
 import com.example.ime.panels.EmojiAndExpressionCenterPanel
 import com.example.dictionary.ui.DictionaryPanel
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 enum class ActiveImePanel {
@@ -187,6 +189,37 @@ fun KeyboardComposeView(
     onAiReplaceText: (String) -> Unit
 ) {
     var activePanel by remember { mutableStateOf(ActiveImePanel.KEYBOARD) }
+    var dictionarySearchQuery by remember { mutableStateOf(currentExtractedText) }
+
+    // Reset dictionary search query when the dictionary panel opens
+    LaunchedEffect(activePanel) {
+        if (activePanel == ActiveImePanel.SMART_DICTIONARY) {
+            dictionarySearchQuery = currentExtractedText
+        }
+    }
+
+    // Shared mode-switch handler used by both the KEYBOARD panel and the
+    // dictionary-search keyboard to avoid duplicating logic.
+    val handleModeSwitch: (KeyItem) -> Unit = { key ->
+        val label = key.label
+        val isToSymbols = label == "=#\\" || label.contains("=") || label.contains("#")
+        val isToNumbers = label == "123" || label == "۱۲۳" || label == "?123" ||
+                label == "١٢٣" || label.contains("1") || label.contains("۱")
+        when (currentMode) {
+            KeyboardMode.TEXT -> {
+                if (isToSymbols) onModeChange(KeyboardMode.SYMBOLS)
+                else onModeChange(KeyboardMode.NUMBERS)
+            }
+            KeyboardMode.NUMBERS -> {
+                if (isToSymbols) onModeChange(KeyboardMode.SYMBOLS)
+                else onModeChange(KeyboardMode.TEXT)
+            }
+            KeyboardMode.SYMBOLS -> {
+                if (isToNumbers) onModeChange(KeyboardMode.NUMBERS)
+                else onModeChange(KeyboardMode.TEXT)
+            }
+        }
+    }
 
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
         Surface(
@@ -200,7 +233,6 @@ fun KeyboardComposeView(
                     .fillMaxWidth()
                     .padding(horizontal = 4.dp, vertical = 2.dp)
             ) {
-                // Velvet Top Toolbar & Suggestion Bar
                 VelvetSuggestionToolbar(
                     theme = theme,
                     suggestions = suggestions,
@@ -237,7 +269,6 @@ fun KeyboardComposeView(
                     }
                 )
 
-                // Panel Body
                 when (activePanel) {
                     ActiveImePanel.KEYBOARD -> {
                         MainVelvetKeyLayout(
@@ -254,25 +285,7 @@ fun KeyboardComposeView(
                                 when (key.type) {
                                     KeyType.LANG_SWITCH -> onLanguageToggle()
                                     KeyType.SHIFT -> onShiftToggle()
-                                    KeyType.MODE_SWITCH -> {
-                                        when (currentMode) {
-                                            KeyboardMode.TEXT -> onModeChange(KeyboardMode.NUMBERS)
-                                            KeyboardMode.NUMBERS -> {
-                                                if (key.label == "=#\\" || key.label.contains("=") || key.label.contains("#")) {
-                                                    onModeChange(KeyboardMode.SYMBOLS)
-                                                } else {
-                                                    onModeChange(KeyboardMode.TEXT)
-                                                }
-                                            }
-                                            KeyboardMode.SYMBOLS -> {
-                                                if (key.label == "123" || key.label == "۱۲۳" || key.label.contains("1") || key.label.contains("۱")) {
-                                                    onModeChange(KeyboardMode.NUMBERS)
-                                                } else {
-                                                    onModeChange(KeyboardMode.TEXT)
-                                                }
-                                            }
-                                        }
-                                    }
+                                    KeyType.MODE_SWITCH -> handleModeSwitch(key)
                                     KeyType.EMOJI -> activePanel = ActiveImePanel.EMOJI
                                     KeyType.CLIPBOARD -> activePanel = ActiveImePanel.CLIPBOARD
                                     KeyType.VOICE -> onVoiceClick()
@@ -469,15 +482,55 @@ fun KeyboardComposeView(
                     }
 
                     ActiveImePanel.SMART_DICTIONARY -> {
-                        DictionaryPanel(
-                            theme = theme,
-                            initialQuery = currentExtractedText,
-                            onInsertText = { txt ->
-                                onPasteClipboardItem(txt)
-                                activePanel = ActiveImePanel.KEYBOARD
-                            },
-                            onClose = { activePanel = ActiveImePanel.KEYBOARD }
-                        )
+                        Column(modifier = Modifier.fillMaxWidth()) {
+                            DictionaryPanel(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(180.dp),
+                                theme = theme,
+                                searchQuery = dictionarySearchQuery,
+                                onSearchQueryChange = { dictionarySearchQuery = it },
+                                onInsertText = { txt ->
+                                    onPasteClipboardItem(txt)
+                                    activePanel = ActiveImePanel.KEYBOARD
+                                },
+                                onClose = { activePanel = ActiveImePanel.KEYBOARD }
+                            )
+
+                            // Main keyboard below the dictionary panel,
+                            // routing keystrokes into the search query.
+                            MainVelvetKeyLayout(
+                                currentLanguage = currentLanguage,
+                                currentMode = currentMode,
+                                isShifted = isShifted,
+                                isCapsLock = isCapsLock,
+                                theme = theme,
+                                heightRatio = heightRatio,
+                                fontSizeScale = fontSizeScale,
+                                persianNumbersDefault = persianNumbersDefault,
+                                halfSpaceEnabled = halfSpaceEnabled,
+                                onKeyPress = { key ->
+                                    when (key.type) {
+                                        KeyType.LANG_SWITCH -> onLanguageToggle()
+                                        KeyType.SHIFT -> onShiftToggle()
+                                        KeyType.MODE_SWITCH -> handleModeSwitch(key)
+                                        KeyType.CHARACTER -> dictionarySearchQuery += key.output
+                                        KeyType.SPACE -> dictionarySearchQuery += " "
+                                        KeyType.HALF_SPACE -> dictionarySearchQuery += "\u200C"
+                                        KeyType.BACKSPACE -> {
+                                            if (dictionarySearchQuery.isNotEmpty()) {
+                                                dictionarySearchQuery = dictionarySearchQuery.dropLast(1)
+                                            }
+                                        }
+                                        else -> {}
+                                    }
+                                },
+                                onKeyLongPress = {},
+                                onInsertOutput = { output ->
+                                    dictionarySearchQuery += output
+                                }
+                            )
+                        }
                     }
                 }
             }
@@ -519,12 +572,10 @@ fun VelvetSuggestionToolbar(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            // Quick Action Toolbar Buttons (Right side in RTL)
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                // AI Button (Glowing velvet badge)
                 Surface(
                     shape = RoundedCornerShape(8.dp),
                     color = if (activePanel == ActiveImePanel.AI_ASSISTANT) theme.accentColor else theme.keyBackgroundColor.copy(alpha = 0.9f),
@@ -548,48 +599,32 @@ fun VelvetSuggestionToolbar(
                     }
                 }
 
-                // Smart Dictionary Button
                 IconButton(
                     onClick = onToggleDictionary,
                     modifier = Modifier.size(30.dp).testTag("ime_dictionary_btn")
                 ) {
-                    Text(
-                        text = "📖",
-                        fontSize = 14.sp
-                    )
+                    Text(text = "📖", fontSize = 14.sp)
                 }
 
-                // Smart Writing Auto-Fix Button
                 IconButton(
                     onClick = onToggleSmartWriting,
                     modifier = Modifier.size(30.dp).testTag("ime_smart_writing_btn")
                 ) {
-                    Text(
-                        text = "✍️",
-                        fontSize = 14.sp
-                    )
+                    Text(text = "✍️", fontSize = 14.sp)
                 }
 
-                // More Tools Hub Button
                 IconButton(
                     onClick = onToggleMoreTools,
                     modifier = Modifier.size(30.dp).testTag("ime_more_tools_btn")
                 ) {
-                    Text(
-                        text = "⚡",
-                        fontSize = 14.sp
-                    )
+                    Text(text = "⚡", fontSize = 14.sp)
                 }
 
-                // Quick Replies Button
                 IconButton(
                     onClick = onToggleQuickReplies,
                     modifier = Modifier.size(30.dp).testTag("ime_quick_replies_btn")
                 ) {
-                    Text(
-                        text = "💬",
-                        fontSize = 14.sp
-                    )
+                    Text(text = "💬", fontSize = 14.sp)
                 }
 
                 IconButton(
@@ -665,7 +700,6 @@ fun VelvetSuggestionToolbar(
                 }
             }
 
-            // Subtle Divider
             Box(
                 modifier = Modifier
                     .width(1.dp)
@@ -673,7 +707,6 @@ fun VelvetSuggestionToolbar(
                     .background(theme.keySubTextColor.copy(alpha = 0.25f))
             )
 
-            // Dynamic Suggestions Carousel
             LazyRow(
                 modifier = Modifier
                     .weight(1f)
@@ -805,11 +838,35 @@ fun VelvetKeyItemView(
 ) {
     var isPressed by remember { mutableStateOf(false) }
     var showPopupDialog by remember { mutableStateOf(false) }
+    var isRepeating by remember { mutableStateOf(false) }
+
+    val currentOnClick by rememberUpdatedState(onClick)
+    val currentOnLongClick by rememberUpdatedState(onLongClick)
+
+    // Continuous delete: fires the first deletion immediately on press,
+    // then keeps deleting every 55 ms after a 400 ms initial hold delay.
+    LaunchedEffect(isRepeating) {
+        if (isRepeating && key.type == KeyType.BACKSPACE) {
+            currentOnClick()
+            delay(400)
+            while (isRepeating) {
+                currentOnClick()
+                delay(55)
+            }
+        }
+    }
 
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.94f else 1f,
         animationSpec = spring(stiffness = 800f),
         label = "key_scale"
+    )
+
+    // Press overlay alpha: 0 when idle, ~0.42 when pressed
+    val pressedOverlayAlpha by animateFloatAsState(
+        targetValue = if (isPressed) 0.42f else 0f,
+        animationSpec = tween(durationMillis = 60),
+        label = "key_pressed_overlay"
     )
 
     val isSpecial = key.type != KeyType.CHARACTER && key.type != KeyType.SPACE && key.type != KeyType.HALF_SPACE
@@ -842,6 +899,15 @@ fun VelvetKeyItemView(
         else -> theme.keyTextColor
     }
 
+    // Press overlay color per key type so the press is always visible.
+    // - Enter (already accent-filled) → white overlay (lightens it)
+    // - Half-space & everything else → accent overlay tint
+    val pressOverlayColor = when {
+        isAction -> Color.White
+        isHalfSpace -> theme.accentColor
+        else -> theme.accentColor
+    }
+
     Box(
         modifier = modifier
             .fillMaxHeight()
@@ -867,15 +933,26 @@ fun VelvetKeyItemView(
                 detectTapGestures(
                     onPress = {
                         isPressed = true
+                        if (key.type == KeyType.BACKSPACE) {
+                            isRepeating = true
+                        }
                         tryAwaitRelease()
                         isPressed = false
+                        if (key.type == KeyType.BACKSPACE) {
+                            isRepeating = false
+                        }
                     },
-                    onTap = { onClick() },
+                    onTap = {
+                        // Backspace clicks are handled by the LaunchedEffect above
+                        if (key.type != KeyType.BACKSPACE) {
+                            currentOnClick()
+                        }
+                    },
                     onLongPress = {
                         if (key.popupOptions.isNotEmpty()) {
                             showPopupDialog = true
                         } else {
-                            onLongClick()
+                            currentOnLongClick()
                         }
                     }
                 )
@@ -883,6 +960,15 @@ fun VelvetKeyItemView(
             .testTag("key_${key.label}"),
         contentAlignment = Alignment.Center
     ) {
+        // Press overlay - drawn first (bottom layer) so labels stay on top
+        if (pressedOverlayAlpha > 0.01f) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(pressOverlayColor.copy(alpha = pressedOverlayAlpha))
+            )
+        }
+
         // Velvet top corner sub-label (Persian digit or secondary symbol)
         if (key.subLabel != null) {
             Box(
@@ -1100,7 +1186,6 @@ fun VelvetCursorToolsPanel(
             modifier = Modifier.fillMaxSize(),
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            // Left Column: D-Pad Arrow Navigation
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -1108,7 +1193,6 @@ fun VelvetCursorToolsPanel(
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Up Arrow
                 Button(
                     onClick = { onKeyPress(KeyItem(label = "↑", type = KeyType.CURSOR_UP)) },
                     colors = ButtonDefaults.buttonColors(containerColor = theme.keyBackgroundColor),
@@ -1121,7 +1205,6 @@ fun VelvetCursorToolsPanel(
                 Spacer(modifier = Modifier.height(4.dp))
 
                 Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                    // Right Arrow (In RTL moves cursor forward/right)
                     Button(
                         onClick = { onKeyPress(KeyItem(label = "→", type = KeyType.CURSOR_RIGHT)) },
                         colors = ButtonDefaults.buttonColors(containerColor = theme.keyBackgroundColor),
@@ -1131,7 +1214,6 @@ fun VelvetCursorToolsPanel(
                         Icon(Icons.Default.KeyboardArrowRight, null, tint = theme.keyTextColor)
                     }
 
-                    // Down Arrow
                     Button(
                         onClick = { onKeyPress(KeyItem(label = "↓", type = KeyType.CURSOR_DOWN)) },
                         colors = ButtonDefaults.buttonColors(containerColor = theme.keyBackgroundColor),
@@ -1141,7 +1223,6 @@ fun VelvetCursorToolsPanel(
                         Icon(Icons.Default.KeyboardArrowDown, null, tint = theme.keyTextColor)
                     }
 
-                    // Left Arrow
                     Button(
                         onClick = { onKeyPress(KeyItem(label = "←", type = KeyType.CURSOR_LEFT)) },
                         colors = ButtonDefaults.buttonColors(containerColor = theme.keyBackgroundColor),
@@ -1153,7 +1234,6 @@ fun VelvetCursorToolsPanel(
                 }
             }
 
-            // Right Column: Clipboard & Quick Edit Actions
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -1584,7 +1664,6 @@ fun VelvetAiBottomSheetPanel(
             .padding(8.dp)
             .testTag("ime_ai_panel")
     ) {
-        // Header
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1624,7 +1703,6 @@ fun VelvetAiBottomSheetPanel(
             }
         }
 
-        // Sensitive field warning
         if (isPasswordField) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -1641,7 +1719,6 @@ fun VelvetAiBottomSheetPanel(
             return@Column
         }
 
-        // Loading State
         if (isLoading) {
             val infiniteTransition = rememberInfiniteTransition(label = "ai_loading")
             val alpha by infiniteTransition.animateFloat(
@@ -1682,7 +1759,6 @@ fun VelvetAiBottomSheetPanel(
             return@Column
         }
 
-        // Result Display State
         if (resultText != null) {
             Column(
                 modifier = Modifier
@@ -1707,7 +1783,6 @@ fun VelvetAiBottomSheetPanel(
                     horizontalArrangement = Arrangement.spacedBy(6.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Replace in target app
                     Button(
                         onClick = { onReplace(resultText ?: "") },
                         colors = ButtonDefaults.buttonColors(containerColor = theme.accentColor),
@@ -1719,7 +1794,6 @@ fun VelvetAiBottomSheetPanel(
                         Text("✓ جایگزین کردن", color = theme.accentTextColor, fontWeight = FontWeight.Bold, fontSize = 11.sp)
                     }
 
-                    // Copy
                     Surface(
                         shape = RoundedCornerShape(8.dp),
                         color = theme.surfaceColor,
@@ -1741,7 +1815,6 @@ fun VelvetAiBottomSheetPanel(
                         }
                     }
 
-                    // Retry
                     Surface(
                         shape = RoundedCornerShape(8.dp),
                         color = theme.surfaceColor,
@@ -1759,7 +1832,6 @@ fun VelvetAiBottomSheetPanel(
                         }
                     }
 
-                    // Back
                     Surface(
                         shape = RoundedCornerShape(8.dp),
                         color = theme.surfaceColor,
@@ -1779,7 +1851,6 @@ fun VelvetAiBottomSheetPanel(
             return@Column
         }
 
-        // Error Banner
         if (errorMessage != null) {
             Surface(
                 shape = RoundedCornerShape(8.dp),
@@ -1808,7 +1879,6 @@ fun VelvetAiBottomSheetPanel(
             }
         }
 
-        // Editable Text / Context preview
         OutlinedTextField(
             value = userText,
             onValueChange = { userText = it },
@@ -1831,7 +1901,6 @@ fun VelvetAiBottomSheetPanel(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // Custom prompt bar if selected
         if (showCustomInput) {
             Row(
                 modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp),
@@ -1870,7 +1939,6 @@ fun VelvetAiBottomSheetPanel(
             }
         }
 
-        // AI Operations Chips Grid
         val operations = AiOperation.values()
         LazyVerticalGrid(
             columns = GridCells.Fixed(3),

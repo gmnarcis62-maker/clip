@@ -13,14 +13,26 @@ enum class KeyboardLanguage {
 
 object KeyboardLayouts {
 
-    // Persian Primary Layout
+    // Persian Primary Layout (with dedicated number row at top)
     fun getPersianRows(
         isShifted: Boolean = false,
         usePersianNumbers: Boolean = true,
         showHalfSpace: Boolean = true
     ): List<List<KeyItem>> {
+        val persianDigits = listOf("۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹", "۰")
+        val englishDigits = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0")
+        val digits = if (usePersianNumbers) persianDigits else englishDigits
+
+        // Top number row with backspace at the end
+        val numberRow = digits.map { digit ->
+            KeyItem(label = digit, output = digit, weight = 1.0f)
+        } + listOf(
+            KeyItem(label = "⌫", type = KeyType.BACKSPACE, weight = 1.3f)
+        )
+
         if (isShifted) {
             return listOf(
+                numberRow,
                 listOf("ً", "ٌ", "ٍ", "َ", "ُ", "ِ", "ّ", "ْ", "ء", "«", "»", "﷼", "٪").map {
                     KeyItem(label = it, output = it)
                 },
@@ -37,45 +49,33 @@ object KeyboardLayouts {
                     KeyItem(label = "{", output = "{"),
                     KeyItem(label = "}", output = "}"),
                     KeyItem(label = "،", output = "،"),
-                    KeyItem(label = ".", output = "."),
-                    KeyItem(label = "⌫", type = KeyType.BACKSPACE, weight = 1.3f)
+                    KeyItem(label = ".", output = ".")
                 ),
                 getBottomRow(isPersian = true, showHalfSpace = showHalfSpace)
             )
         }
 
-        // Persian Standard Layout - Row 1
-        val persianDigits = listOf("۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹", "۰")
-        val englishDigits = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0")
-
-        // Row 1: ض ص ث ق ف غ ع ه خ ح ج چ (12 keys)
+        // Row 1: ض ص ث ق ف غ ع ه خ ح ج چ (12 letters)
         val row1Letters = listOf("ض", "ص", "ث", "ق", "ف", "غ", "ع", "ه", "خ", "ح", "ج", "چ")
-        val row1 = row1Letters.mapIndexed { index, char ->
-            val digit = if (index < 10) {
-                if (usePersianNumbers) persianDigits[index] else englishDigits[index]
-            } else when (index) {
-                10 -> "["
-                else -> "]"
-            }
+        val row1 = row1Letters.map { char ->
             val popups = when (char) {
-                "ه" -> listOf(digit, "ة", "ۀ", "ه")
+                "ه" -> listOf("ة", "ۀ", "ه")
                 "ج" -> listOf("[", "{", "ج")
                 "چ" -> listOf("]", "}", "چ")
-                "ص" -> listOf(digit, "ض", "ص")
-                "ع" -> listOf(digit, "غ", "ع")
-                "ف" -> listOf(digit, "ق", "ف")
-                else -> listOf(digit, char)
+                "ص" -> listOf("ض", "ص")
+                "ع" -> listOf("غ", "ع")
+                "ف" -> listOf("ق", "ف")
+                else -> listOf(char)
             }
             KeyItem(
                 label = char,
-                subLabel = digit,
                 output = char,
                 popupOptions = popups,
                 weight = 1.0f
             )
         }
 
-        // Row 2: ش س ی ب ل ا ت ن م ک گ (11 keys)
+        // Row 2: ش س ی ب ل ا ت ن م ک گ (11 letters)
         val row2Letters = listOf("ش", "س", "ی", "ب", "ل", "ا", "ت", "ن", "م", "ک", "گ")
         val row2 = row2Letters.map { char ->
             val popups = when (char) {
@@ -89,42 +89,33 @@ object KeyboardLayouts {
                 "س" -> listOf("ش", "س")
                 else -> emptyList()
             }
-            val subLabel = when (char) {
-                "ا" -> "آ"
-                "ی" -> "ئ"
-                "ب" -> "پ"
-                "ک" -> "ك"
-                "ت" -> "ة"
-                else -> null
-            }
             KeyItem(
                 label = char,
-                subLabel = subLabel,
                 output = char,
                 popupOptions = popups,
                 weight = 1.0f
             )
         }
 
-        // Row 3: Shift, ظ ط ز ر د ذ ژ پ و, Backspace (11 keys: Shift + 9 letters + Backspace)
+        // Row 3: Shift + ظ ط ز ر د ذ ژ پ و (no backspace here — it's on the number row)
         val row3 = mutableListOf<KeyItem>()
-        row3.add(KeyItem(label = "⇧", type = KeyType.SHIFT, weight = 1.2f))
+        row3.add(KeyItem(label = "⇧", type = KeyType.SHIFT, weight = 1.5f))
 
         val row3Letters = listOf(
             KeyItem(label = "ظ", output = "ظ", popupOptions = listOf("ط", "ظ")),
             KeyItem(label = "ط", output = "ط", popupOptions = listOf("ظ", "ط")),
-            KeyItem(label = "ز", subLabel = "ژ", output = "ز", popupOptions = listOf("ژ", "ز")),
+            KeyItem(label = "ز", output = "ز", popupOptions = listOf("ژ", "ز")),
             KeyItem(label = "ر", output = "ر"),
-            KeyItem(label = "د", subLabel = "ذ", output = "د", popupOptions = listOf("ذ", "د")),
+            KeyItem(label = "د", output = "د", popupOptions = listOf("ذ", "د")),
             KeyItem(label = "ذ", output = "ذ"),
             KeyItem(label = "ژ", output = "ژ"),
-            KeyItem(label = "پ", subLabel = "پ", output = "پ", popupOptions = listOf("پ", "ب")),
-            KeyItem(label = "و", subLabel = "ؤ", output = "و", popupOptions = listOf("ؤ", "و"))
+            KeyItem(label = "پ", output = "پ", popupOptions = listOf("پ", "ب")),
+            KeyItem(label = "و", output = "و", popupOptions = listOf("ؤ", "و"))
         )
         row3.addAll(row3Letters)
-        row3.add(KeyItem(label = "⌫", type = KeyType.BACKSPACE, weight = 1.3f))
 
         return listOf(
+            numberRow,
             row1,
             row2,
             row3,

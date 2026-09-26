@@ -75,8 +75,10 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun DictionaryPanel(
+    modifier: Modifier = Modifier,
     theme: KeyboardTheme,
-    initialQuery: String = "",
+    searchQuery: String,
+    onSearchQueryChange: (String) -> Unit,
     onInsertText: (String) -> Unit,
     onClose: () -> Unit
 ) {
@@ -86,7 +88,6 @@ fun DictionaryPanel(
     val aiRepo = ClipbordApp.instance.aiRepository
     val ttsEngine = remember { DictionaryTtsEngine(context) }
 
-    var searchQuery by remember { mutableStateOf(initialQuery) }
     var searchResults by remember { mutableStateOf<List<DictionaryItemResult>>(emptyList()) }
     var selectedEntry by remember { mutableStateOf<DictionaryEntry?>(null) }
     var selectedPersonalEntry by remember { mutableStateOf<PersonalDictionaryEntry?>(null) }
@@ -106,12 +107,9 @@ fun DictionaryPanel(
     val history by repo.getHistoryFlow().collectAsState(initial = emptyList())
     val personalEntries by repo.getPersonalEntriesFlow().collectAsState(initial = emptyList())
 
-    // Load word of the day & initial search
+    // Load word of the day once
     LaunchedEffect(Unit) {
         wordOfTheDay = repo.getWordOfTheDay()
-        if (initialQuery.isNotBlank()) {
-            searchResults = repo.search(initialQuery)
-        }
     }
 
     LaunchedEffect(searchQuery, selectedTab) {
@@ -130,9 +128,8 @@ fun DictionaryPanel(
     val tabs = listOf("همه", "فارسی", "انگلیسی", "علاقه‌مندی‌ها", "تاریخچه", "لغت‌نامه من")
 
     Column(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
-            .height(260.dp)
             .background(theme.surfaceColor, RoundedCornerShape(12.dp))
             .padding(6.dp)
     ) {
@@ -189,14 +186,14 @@ fun DictionaryPanel(
             ) {
                 OutlinedTextField(
                     value = searchQuery,
-                    onValueChange = { searchQuery = it },
+                    onValueChange = onSearchQueryChange,
                     placeholder = { Text("جستجوی واژه یا معنی...", fontSize = 11.sp, color = theme.keySubTextColor) },
                     leadingIcon = {
                         Icon(Icons.Default.Search, null, tint = theme.accentColor, modifier = Modifier.size(16.dp))
                     },
                     trailingIcon = {
                         if (searchQuery.isNotEmpty()) {
-                            IconButton(onClick = { searchQuery = "" }, modifier = Modifier.size(24.dp)) {
+                            IconButton(onClick = { onSearchQueryChange("") }, modifier = Modifier.size(24.dp)) {
                                 Icon(Icons.Default.Close, null, tint = theme.keySubTextColor, modifier = Modifier.size(14.dp))
                             }
                         }
@@ -620,7 +617,7 @@ fun DictionaryPanel(
                                 border = BorderStroke(0.5.dp, theme.keyTopHighlightColor),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { searchQuery = h.query }
+                                    .clickable { onSearchQueryChange(h.query) }
                             ) {
                                 Row(
                                     modifier = Modifier

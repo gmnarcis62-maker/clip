@@ -37,6 +37,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -61,8 +62,6 @@ import com.example.billing.BillingStatus
 import com.example.billing.MyketBillingManager
 import com.example.ui.components.ClipbordTopBar
 import com.example.ui.components.PersianCard
-import com.example.ui.components.PersianGradientButton
-import com.example.ui.theme.PrimaryCyan
 import com.example.ui.theme.SecondaryGold
 import com.example.ui.theme.VipGold
 
@@ -87,20 +86,47 @@ fun VipScreen(
 
     var isCheckingRestore by remember { mutableStateOf(false) }
 
+    // Show status messages from the billing manager
+    LaunchedEffect(statusMsg) {
+        statusMsg?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+        }
+    }
+
     val perks = listOf(
-        VipPerk("بازگشایی همه ۱۰ پوسته لوکس", "دسترسی نامحدود به پوسته‌های امولد، سایبر نئون، طلایی، زمرد، یاقوت و شیشه‌ای", Icons.Default.Palette),
-        VipPerk("کلیپبورد پیشرفته و نامحدود", "ذخیره و دسته‌بندی صدها پیام آماده و متن سریع بدون محدودیت", Icons.Default.ContentPaste),
-        VipPerk("پیشنهاد هوشمند کلمات پیشرفته", "الگوریتم دقیق‌تر و افزایش سرعت تایپ تا ۳ برابر", Icons.Default.AutoAwesome),
-        VipPerk("شخصی‌سازی نامحدود کیبورد", "تنظیم دقیق‌تر ارتفاع، ابعاد، ویبره و استایل‌های اختصاصی", Icons.Default.LockOpen),
-        VipPerk("پشتیبانی VIP و ارتقای همیشگی", "دریافت آپدیت‌های آینده و اولویت در پاسخگویی پشتیبانی", Icons.Default.Star)
+        VipPerk(
+            title = "پوسته‌های اختصاصی و نامحدود",
+            description = "دسترسی کامل به همه پوسته‌های Velvet و طرح‌های ویژه و لوکس برای کیبورد.",
+            icon = Icons.Default.Palette
+        ),
+        VipPerk(
+            title = "تاریخچه نامحدود کلیپ‌بورد",
+            description = "ذخیره بینهایت متن کپی‌شده بدون محدودیت زمانی و تعدادی در حافظه دستگاه.",
+            icon = Icons.Default.ContentPaste
+        ),
+        VipPerk(
+            title = "هوش مصنوعی نامحدود",
+            description = "استفاده نامحدود از تمام قابلیت‌های هوش مصنوعی مرسانا شامل بازنویسی، ترجمه و خلاصه‌سازی.",
+            icon = Icons.Default.AutoAwesome
+        ),
+        VipPerk(
+            title = "حذف کامل تبلیغات",
+            description = "تجربه‌ای بدون تبلیغات و مزاحمت با عملکرد سریع‌تر و روان‌تر.",
+            icon = Icons.Default.LockOpen
+        ),
+        VipPerk(
+            title = "پشتیبانی اختصاصی VIP",
+            description = "پشتیبانی سریع و اختصاصی از کاربران VIP و دسترسی زودتر به قابلیت‌های جدید.",
+            icon = Icons.Default.Star
+        )
     )
 
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
         Scaffold(
             topBar = {
                 ClipbordTopBar(
-                    title = "نسخه حرفه‌ای (VIP)",
-                    subtitle = "خرید اشتراک دائمی از مایکت",
+                    title = "اشتراک ویژه (VIP)",
+                    subtitle = "دسترسی نامحدود به تمام قابلیت‌های مرسانا",
                     onBackClick = onBackClick
                 )
             },
@@ -121,7 +147,10 @@ fun VipScreen(
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(20.dp),
                         color = Color(0xFF1E1A11),
-                        border = androidx.compose.foundation.BorderStroke(2.dp, Brush.linearGradient(listOf(SecondaryGold, VipGold)))
+                        border = androidx.compose.foundation.BorderStroke(
+                            2.dp,
+                            Brush.linearGradient(listOf(SecondaryGold, VipGold))
+                        )
                     ) {
                         Column(
                             modifier = Modifier.padding(20.dp),
@@ -156,7 +185,10 @@ fun VipScreen(
                             Spacer(modifier = Modifier.height(6.dp))
 
                             Text(
-                                text = if (isVip) "حساب شما ویژه (VIP) است ✓\nتمام امکانات برای شما فعال می‌باشد." else "با ارتقا به نسخه حرفه‌ای از تمام قابلیت‌های ویژه کیبورد بدون محدودیت لذت ببرید.",
+                                text = if (isVip)
+                                    "اشتراک ویژه شما (VIP) فعال است.\nاز تمام امکانات بدون محدودیت لذت ببرید."
+                                else
+                                    "با خرید اشتراک ویژه، تمام قابلیت‌های حرفه‌ای کیبورد هوشمند مرسانا را فعال کنید.",
                                 color = if (isVip) Color(0xFF10B981) else Color.White.copy(alpha = 0.85f),
                                 fontSize = 13.sp,
                                 textAlign = TextAlign.Center
@@ -165,10 +197,10 @@ fun VipScreen(
                     }
                 }
 
-                // Perks List
+                // Perks List Title
                 item {
                     Text(
-                        text = "ویژگی‌ها و مزایای نسخه حرفه‌ای",
+                        text = "مزایای اشتراک ویژه",
                         color = MaterialTheme.colorScheme.onBackground,
                         fontSize = 15.sp,
                         fontWeight = FontWeight.Bold,
@@ -176,6 +208,7 @@ fun VipScreen(
                     )
                 }
 
+                // Perks List
                 items(perks.size) { index ->
                     val perk = perks[index]
                     PersianCard {
@@ -195,9 +228,18 @@ fun VipScreen(
                             }
 
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(perk.title, fontWeight = FontWeight.Bold, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                                Text(
+                                    perk.title,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
                                 Spacer(modifier = Modifier.height(2.dp))
-                                Text(perk.description, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    perk.description,
+                                    fontSize = 11.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
                         }
                     }
@@ -210,15 +252,42 @@ fun VipScreen(
                             modifier = Modifier.fillMaxWidth(),
                             verticalArrangement = Arrangement.spacedBy(10.dp)
                         ) {
+                            // Status message from billing manager
+                            if (billingStatus == BillingStatus.PURCHASING ||
+                                billingStatus == BillingStatus.CONNECTING
+                            ) {
+                                Surface(
+                                    shape = RoundedCornerShape(10.dp),
+                                    color = VipGold.copy(alpha = 0.15f),
+                                    modifier = Modifier.fillMaxWidth()
+                                ) {
+                                    Text(
+                                        text = statusMsg ?: "در حال ارتباط با درگاه پرداخت مایکت...",
+                                        color = VipGold,
+                                        fontSize = 12.sp,
+                                        textAlign = TextAlign.Center,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(10.dp)
+                                    )
+                                }
+                            }
+
                             Button(
                                 onClick = {
                                     val activity = context as? Activity
                                     if (activity != null) {
                                         billingManager.initiatePurchase(activity)
                                     } else {
-                                        Toast.makeText(context, "خطا در فراخوانی درگاه پرداخت", Toast.LENGTH_SHORT).show()
+                                        Toast.makeText(
+                                            context,
+                                            "خطا: Activity پیدا نشد",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
                                     }
                                 },
+                                enabled = billingStatus != BillingStatus.PURCHASING &&
+                                        billingStatus != BillingStatus.CONNECTING,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(54.dp)
@@ -232,7 +301,7 @@ fun VipScreen(
                                 Icon(Icons.Default.Star, null, modifier = Modifier.size(20.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "خرید نسخه حرفه‌ای از مایکت",
+                                    text = "خرید اشتراک ویژه از مایکت",
                                     fontSize = 15.sp,
                                     fontWeight = FontWeight.Bold
                                 )
@@ -240,12 +309,15 @@ fun VipScreen(
 
                             OutlinedButton(
                                 onClick = {
-                                    isCheckingRestore = true
-                                    billingManager.restorePurchases { success, message ->
-                                        isCheckingRestore = false
-                                        Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                                    if (!isCheckingRestore) {
+                                        isCheckingRestore = true
+                                        billingManager.restorePurchases { success, message ->
+                                            isCheckingRestore = false
+                                            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+                                        }
                                     }
                                 },
+                                enabled = !isCheckingRestore,
                                 modifier = Modifier
                                     .fillMaxWidth()
                                     .height(48.dp)
@@ -254,11 +326,16 @@ fun VipScreen(
                             ) {
                                 Icon(Icons.Default.Refresh, null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Text("بازیابی خرید قبلی", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                                Text(
+                                    text = if (isCheckingRestore) "در حال بررسی..." else "بازیابی خرید قبلی",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
+                                )
                             }
 
                             Text(
-                                text = "شناسه محصول در مایکت: ${MyketBillingManager.SKU_VIP_PRO}\nپرداخت از طریق درگاه امن پرداخت درون‌برنامه‌ای مایکت انجام می‌شود.",
+                                text = "شناسه محصول: ${MyketBillingManager.SKU_VIP_PRO}\n" +
+                                        "پرداخت از طریق برنامه مایکت انجام می‌شود و پس از تأیید، اشتراک شما بلافاصله فعال می‌گردد.",
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 fontSize = 11.sp,
                                 textAlign = TextAlign.Center,
@@ -279,7 +356,7 @@ fun VipScreen(
                                 Icon(Icons.Default.CheckCircle, null, tint = Color(0xFF10B981))
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
-                                    text = "اشتراک ویژه شما فعال و دائمی است.",
+                                    text = "اشتراک ویژه شما فعال است. از تمام امکانات لذت ببرید.",
                                     color = Color(0xFF10B981),
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 13.sp

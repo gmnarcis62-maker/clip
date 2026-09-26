@@ -89,8 +89,8 @@ fun SettingsScreen(
         Scaffold(
             topBar = {
                 ClipbordTopBar(
-                    title = "تنظیمات کیبورد",
-                    subtitle = "شخصی‌سازی ظاهر، تایپ، صدا، لرزش و هوش مصنوعی",
+                    title = "تنظیمات برنامه",
+                    subtitle = "شخصی‌سازی کیبورد مرسانا و مدیریت امکانات هوشمند",
                     onBackClick = onBackClick
                 )
             },
@@ -112,22 +112,21 @@ fun SettingsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            SectionTitle(title = "هوش مصنوعی و دستیار متن", icon = Icons.Default.AutoAwesome)
+                            SectionTitle(title = "دستیار هوش مصنوعی مرسانا", icon = Icons.Default.AutoAwesome)
                             Button(
                                 onClick = onNavigateToAi,
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFB800)),
                                 shape = RoundedCornerShape(8.dp),
                                 modifier = Modifier.height(34.dp)
                             ) {
-                                Text("آزمایش AI", color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Text("تنظیمات AI", color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                             }
                         }
 
                         Spacer(modifier = Modifier.height(6.dp))
 
-                        // Usage status
                         Text(
-                            text = if (isVip) "وضعیت: حساب حرفه‌ای VIP (نامحدود) ✓" else "استفاده امروز: ${PersianDateUtils.toPersianDigits(aiUsageCount)} از ${PersianDateUtils.toPersianDigits(AiConfig.FREE_DAILY_REQUEST_LIMIT)}",
+                            text = if (isVip) "وضعیت: اشتراک ویژه VIP (نامحدود)" else "استفاده امروز: ${PersianDateUtils.toPersianDigits(aiUsageCount)} از ${PersianDateUtils.toPersianDigits(AiConfig.FREE_DAILY_REQUEST_LIMIT)}",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
                             color = if (isVip) Color(0xFF10B981) else Color(0xFFFFB800)
@@ -136,8 +135,8 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.height(10.dp))
 
                         SettingToggleRow(
-                            title = "فعال بودن قابلیت‌های هوش مصنوعی",
-                            subtitle = "دسترسی به اصلاح متن، بازنویسی، ترجمه و پاسخ هوشمند",
+                            title = "فعال بودن دستیار هوش مصنوعی",
+                            subtitle = "امکان استفاده از هوش مصنوعی برای بازنویسی، ترجمه و خلاصه‌سازی متن",
                             checked = aiEnabled,
                             onCheckedChange = { scope.launch { preferences.setAiEnabled(it) } }
                         )
@@ -145,8 +144,8 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.height(8.dp))
 
                         SettingToggleRow(
-                            title = "دکمه ✨ هوش مصنوعی در کیبورد",
-                            subtitle = "نمایش دکمه دسترسی سریع در نوار بالای کیبورد",
+                            title = "نمایش دکمه هوش مصنوعی در کیبورد",
+                            subtitle = "نمایش دکمه اختصاصی AI در نوار بالای کیبورد",
                             checked = aiButtonVisible,
                             onCheckedChange = { scope.launch { preferences.setAiButtonVisible(it) } }
                         )
@@ -155,7 +154,11 @@ fun SettingsScreen(
 
                         Text("لحن پیش‌فرض هوش مصنوعی:", fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            listOf("NEUTRAL" to "خنثی", "FRIENDLY" to "خودمانی", "FORMAL" to "رسمی").forEach { (tone, label) ->
+                            listOf(
+                                "NEUTRAL" to "معمولی",
+                                "FRIENDLY" to "دوستانه",
+                                "FORMAL" to "رسمی"
+                            ).forEach { (tone, label) ->
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     RadioButton(
                                         selected = aiTone == tone,
@@ -169,10 +172,10 @@ fun SettingsScreen(
                     }
                 }
 
-                // 1. Appearance & Height
+                // 1. Appearance, Size & Font
                 item {
                     PersianCard {
-                        SectionTitle(title = "ظاهر، ابعاد و پوسته", icon = Icons.Default.Palette)
+                        SectionTitle(title = "ظاهر، اندازه و چیدمان", icon = Icons.Default.Palette)
 
                         Spacer(modifier = Modifier.height(8.dp))
 
@@ -184,25 +187,28 @@ fun SettingsScreen(
                         ) {
                             Column {
                                 Text("پوسته کیبورد", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                Text("انتخاب تم‌های ایرانی، مدرن و امولد", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
+                                Text("انتخاب رنگ و طرح دلخواه برای کیبورد", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
                             }
                             Button(
                                 onClick = onNavigateToThemes,
                                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryCyan)
                             ) {
-                                Text("تغییر تم", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                Text("مشاهده", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 12.sp)
                             }
                         }
 
                         Spacer(modifier = Modifier.height(14.dp))
 
                         // Dark Mode selector
-                        Text("حالت تم برنامه:", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                        Text("حالت نمایش:", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                            listOf("SYSTEM" to "خودکار", "LIGHT" to "روشن", "DARK" to "تاریک", "AMOLED" to "امولد").forEach { (mode, label) ->
-                                Row(
-                                    verticalAlignment = Alignment.CenterVertically
-                                ) {
+                            listOf(
+                                "SYSTEM" to "خودکار",
+                                "LIGHT" to "روشن",
+                                "DARK" to "تیره",
+                                "AMOLED" to "مشکی"
+                            ).forEach { (mode, label) ->
+                                Row(verticalAlignment = Alignment.CenterVertically) {
                                     RadioButton(
                                         selected = darkMode == mode,
                                         onClick = { scope.launch { preferences.setDarkMode(mode) } },
@@ -215,14 +221,49 @@ fun SettingsScreen(
 
                         Spacer(modifier = Modifier.height(14.dp))
 
-                        // Height Slider
-                        Text("ارتفاع کیبورد: ${PersianDateUtils.toPersianDigits((heightRatio * 100).toInt())}%", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                        // Keyboard Height Slider (expanded range)
+                        Text(
+                            "ارتفاع کیبورد: ${PersianDateUtils.toPersianDigits((heightRatio * 100).toInt())}%",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp
+                        )
                         Slider(
                             value = heightRatio,
                             onValueChange = { scope.launch { preferences.setKeyboardHeight(it) } },
-                            valueRange = 0.85f..1.25f,
+                            valueRange = 0.70f..1.40f,
+                            steps = 6,
+                            colors = SliderDefaults.colors(
+                                thumbColor = PrimaryCyan,
+                                activeTrackColor = PrimaryCyan
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(8.dp))
+
+                        // Font Size Slider (NEW)
+                        Text(
+                            "اندازه فونت کیبورد: ${PersianDateUtils.toPersianDigits((fontSizeScale * 100).toInt())}%",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp
+                        )
+                        Slider(
+                            value = fontSizeScale,
+                            onValueChange = { scope.launch { preferences.setFontSizeScale(it) } },
+                            valueRange = 0.80f..1.30f,
                             steps = 4,
-                            colors = SliderDefaults.colors(thumbColor = PrimaryCyan, activeTrackColor = PrimaryCyan)
+                            colors = SliderDefaults.colors(
+                                thumbColor = PrimaryCyan,
+                                activeTrackColor = PrimaryCyan
+                            )
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+
+                        Text(
+                            "💡 با تغییر این دو اسلایدر، می‌توانید ارتفاع و اندازه‌ی نوشته‌های کیبورد را متناسب با سلیقه و اندازه‌ی صفحه‌ی گوشی خود تنظیم کنید.",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 11.sp,
+                            lineHeight = 15.sp
                         )
                     }
                 }
@@ -230,13 +271,13 @@ fun SettingsScreen(
                 // 2. Typing & Predictions
                 item {
                     PersianCard {
-                        SectionTitle(title = "تایپ، اصلاح خودکار و لغت‌نامه", icon = Icons.Default.Psychology)
+                        SectionTitle(title = "تایپ هوشمند و پیش‌بینی متن", icon = Icons.Default.Psychology)
 
                         Spacer(modifier = Modifier.height(8.dp))
 
                         SettingToggleRow(
-                            title = "پیشنهاد هوشمند کلمات",
-                            subtitle = "نمایش کلمات پیشنهادی در نوار بالای کیبورد",
+                            title = "نمایش پیشنهاد کلمات",
+                            subtitle = "نمایش کلمات پیشنهادی برای تایپ سریع‌تر و راحت‌تر",
                             checked = suggestionsEnabled,
                             onCheckedChange = { scope.launch { preferences.setSuggestionsEnabled(it) } }
                         )
@@ -244,8 +285,8 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.height(10.dp))
 
                         SettingToggleRow(
-                            title = "اصلاح خودکار غلط‌های املایی فارسی",
-                            subtitle = "اصلاح غلط‌های رایج مانند میخام → می‌خوام",
+                            title = "تصحیح خودکار غلط‌های تایپی",
+                            subtitle = "تصحیح خودکار غلط‌های رایج هنگام تایپ فارسی",
                             checked = autoCorrectionEnabled,
                             onCheckedChange = { scope.launch { preferences.setAutoCorrectionEnabled(it) } }
                         )
@@ -253,8 +294,8 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.height(10.dp))
 
                         SettingToggleRow(
-                            title = "استفاده پیش‌فرض از اعداد فارسی",
-                            subtitle = "تایپ اعداد به صورت ۰۱۲۳۴۵۶۷۸۹",
+                            title = "استفاده از اعداد فارسی",
+                            subtitle = "نمایش اعداد به صورت فارسی (۱، ۲، ۳) در کیبورد",
                             checked = persianNumbersDefault,
                             onCheckedChange = { scope.launch { preferences.setPersianNumbersEnabled(it) } }
                         )
@@ -262,8 +303,8 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.height(10.dp))
 
                         SettingToggleRow(
-                            title = "کلید اختصاصی نیم‌فاصله",
-                            subtitle = "دسترسی سریع به نیم‌فاصله در ردیف پایین",
+                            title = "نمایش نیم‌فاصله در کیبورد",
+                            subtitle = "نمایش دکمه اختصاصی نیم‌فاصله برای تایپ صحیح کلمات فارسی",
                             checked = halfSpaceEnabled,
                             onCheckedChange = { scope.launch { preferences.setHalfSpaceEnabled(it) } }
                         )
@@ -273,20 +314,23 @@ fun SettingsScreen(
                 // 3. Sound & Vibration
                 item {
                     PersianCard {
-                        SectionTitle(title = "صدا و بازخورد لمسی (ویبره)", icon = Icons.Default.Vibration)
+                        SectionTitle(title = "صدا و لرزش هنگام تایپ", icon = Icons.Default.Vibration)
 
                         Spacer(modifier = Modifier.height(8.dp))
 
                         SettingToggleRow(
-                            title = "لرزش هنگام لمس کلیدها (Haptic)",
-                            subtitle = "ایجاد حس فیزیکی تایپ",
+                            title = "لرزش هنگام فشردن کلید (Haptic)",
+                            subtitle = "ایجاد لرزش کوتاه هنگام فشردن دکمه‌ها",
                             checked = vibrationEnabled,
                             onCheckedChange = { scope.launch { preferences.setVibrationEnabled(it) } }
                         )
 
                         if (vibrationEnabled) {
                             Spacer(modifier = Modifier.height(10.dp))
-                            Text("شدت لرزش: ${PersianDateUtils.toPersianDigits(vibrationStrength)} میلی‌ثانیه", fontSize = 12.sp)
+                            Text(
+                                "قدرت لرزش: ${PersianDateUtils.toPersianDigits(vibrationStrength)} میلی‌ثانیه",
+                                fontSize = 12.sp
+                            )
                             Slider(
                                 value = vibrationStrength.toFloat(),
                                 onValueChange = { scope.launch { preferences.setVibrationStrength(it.toInt()) } },
@@ -298,8 +342,8 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.height(10.dp))
 
                         SettingToggleRow(
-                            title = "صدای کلیک هنگام لمس کلیدها",
-                            subtitle = "پخش افکت صوتی استاندارد سیستم",
+                            title = "صدای کلیک هنگام فشردن کلید",
+                            subtitle = "پخش صدای کوتاه هنگام فشردن دکمه‌ها",
                             checked = soundEnabled,
                             onCheckedChange = { scope.launch { preferences.setSoundEnabled(it) } }
                         )
@@ -309,13 +353,13 @@ fun SettingsScreen(
                 // 4. Voice Typing
                 item {
                     PersianCard {
-                        SectionTitle(title = "تایپ صوتی و تشخیص گفتار", icon = Icons.Default.TextFields)
+                        SectionTitle(title = "تایپ صوتی و گفتاری", icon = Icons.Default.TextFields)
 
                         Spacer(modifier = Modifier.height(8.dp))
 
                         SettingToggleRow(
-                            title = "کلید میکروفون تایپ صوتی",
-                            subtitle = "تبدیل صدای کاربر به متن از طریق سرویس تشخیص گفتار",
+                            title = "فعال بودن تایپ صوتی",
+                            subtitle = "امکان تبدیل گفتار به نوشتار با استفاده از میکروفون دستگاه",
                             checked = voiceTypingEnabled,
                             onCheckedChange = { scope.launch { preferences.setVoiceTypingEnabled(it) } }
                         )
@@ -340,7 +384,7 @@ fun SettingsScreen(
                                 preferences.setHalfSpaceEnabled(true)
                                 preferences.setAiEnabled(true)
                                 preferences.setAiButtonVisible(true)
-                                Toast.makeText(context, "تنظیمات به حالت پیش‌فرض بازگشت.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "تنظیمات به حالت پیش‌فرض بازگردانده شد.", Toast.LENGTH_SHORT).show()
                             }
                         },
                         modifier = Modifier.fillMaxWidth().height(48.dp),
@@ -350,7 +394,7 @@ fun SettingsScreen(
                             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     ) {
-                        Text("بازنشانی تمام تنظیمات به پیش‌فرض", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text("بازگرداندن تنظیمات به حالت پیش‌فرض", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                     }
                 }
             }
