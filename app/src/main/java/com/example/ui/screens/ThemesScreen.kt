@@ -38,7 +38,6 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -51,9 +50,6 @@ import com.example.ClipbordApp
 import com.example.themes.KeyboardTheme
 import com.example.themes.ThemeManager
 import com.example.ui.components.ClipbordTopBar
-import com.example.ui.components.PersianCard
-import com.example.ui.theme.PrimaryCyan
-import com.example.ui.theme.SecondaryGold
 import com.example.ui.theme.VipGold
 import kotlinx.coroutines.launch
 
@@ -99,12 +95,22 @@ fun ThemesScreen(
                         isLocked = isLocked,
                         onSelect = {
                             if (isLocked) {
-                                Toast.makeText(context, "این پوسته مخصوص نسخه حرفه‌ای VIP است.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    "این پوسته مخصوص نسخه حرفه‌ای VIP است.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                                 onNavigateToVip()
                             } else {
                                 scope.launch {
                                     preferences.setThemeId(theme.id)
-                                    Toast.makeText(context, "پوسته «${theme.namePersian}» فعال شد.", Toast.LENGTH_SHORT).show()
+                                    // ✅ Sync the app's light/dark mode with the theme brightness
+                                    preferences.setDarkMode(if (theme.isDark) "DARK" else "LIGHT")
+                                    Toast.makeText(
+                                        context,
+                                        "پوسته «${theme.namePersian}» فعال شد.",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
                                 }
                             }
                         }
@@ -169,8 +175,18 @@ fun ThemeCard(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Icon(Icons.Default.Check, null, tint = theme.accentTextColor, modifier = Modifier.size(14.dp))
-                            Text("پوسته فعال", color = theme.accentTextColor, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Icon(
+                                Icons.Default.Check,
+                                null,
+                                tint = theme.accentTextColor,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                "پوسته فعال",
+                                color = theme.accentTextColor,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 } else if (isLocked) {
@@ -183,8 +199,18 @@ fun ThemeCard(
                             verticalAlignment = Alignment.CenterVertically,
                             horizontalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
-                            Icon(Icons.Default.Lock, null, tint = Color.Black, modifier = Modifier.size(14.dp))
-                            Text("VIP ویژه", color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                            Icon(
+                                Icons.Default.Lock,
+                                null,
+                                tint = Color.Black,
+                                modifier = Modifier.size(14.dp)
+                            )
+                            Text(
+                                "VIP ویژه",
+                                color = Color.Black,
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold
+                            )
                         }
                     }
                 }
@@ -204,13 +230,16 @@ fun ThemeCard(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
                 color = theme.surfaceColor,
-                border = androidx.compose.foundation.BorderStroke(0.5.dp, Color.White.copy(alpha = 0.08f))
+                border = androidx.compose.foundation.BorderStroke(
+                    0.5.dp,
+                    Color.White.copy(alpha = 0.08f)
+                )
             ) {
                 Column(
                     modifier = Modifier.padding(6.dp),
                     verticalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
-                    // Mini Toolbar (AI, Clipboard, Dictionary, Emoji, Settings)
+                    // Mini Toolbar
                     Surface(
                         modifier = Modifier.fillMaxWidth().height(22.dp),
                         shape = RoundedCornerShape(6.dp),
@@ -222,7 +251,7 @@ fun ThemeCard(
                             horizontalArrangement = Arrangement.SpaceBetween
                         ) {
                             Text("✨ AI", color = theme.accentColor, fontSize = 8.sp, fontWeight = FontWeight.Bold)
-                            Text("📋 کلیپبورد", color = theme.keySubTextColor, fontSize = 8.sp)
+                            Text("📋 کلیپ‌بورد", color = theme.keySubTextColor, fontSize = 8.sp)
                             Text("📖 دیکشنری", color = theme.keySubTextColor, fontSize = 8.sp)
                             Text("😊 ایموجی", color = theme.keySubTextColor, fontSize = 8.sp)
                             Text("⚙️", color = theme.keySubTextColor, fontSize = 9.sp)
@@ -246,7 +275,7 @@ fun ThemeCard(
                         }
                     }
 
-                    // Row 1: Complete Persian Letters (ض ص ث ق ف غ ع ه خ ح ج چ پ)
+                    // Row 1
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(2.dp)
@@ -256,7 +285,7 @@ fun ThemeCard(
                         }
                     }
 
-                    // Row 2: Complete Persian Letters (ش س ی ب ل ا ت ن م ک گ و ئ)
+                    // Row 2
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(2.dp)
@@ -266,19 +295,19 @@ fun ThemeCard(
                         }
                     }
 
-                    // Row 3: Shift, ظ ط ز ر ذ د ژ ؟ ، . Backspace
+                    // Row 3
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(2.dp)
                     ) {
                         MiniKey(char = "⇧", theme = theme, isSpecial = true, modifier = Modifier.weight(1.3f))
-                        listOf("ظ", "ط", "ز", "ر", "ذ", "د", "ژ", "؟", "،", ".").forEach { char ->
+                        listOf("ظ", "ط", "ز", "ر", "ذ", "د", "ژ", "پ", "و", ".").forEach { char ->
                             MiniKey(char = char, theme = theme, modifier = Modifier.weight(1f))
                         }
                         MiniKey(char = "⌫", theme = theme, isSpecial = true, modifier = Modifier.weight(1.3f))
                     }
 
-                    // Row 4: Bottom Row (123, Language, Half-space, Space, Punctuation, Enter)
+                    // Row 4
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(2.5.dp)
@@ -305,7 +334,9 @@ fun ThemeCard(
                 )
             ) {
                 Text(
-                    text = if (isSelected) "این پوسته در حال استفاده است" else if (isLocked) "بازگشایی در نسخه VIP" else "فعال‌سازی این پوسته",
+                    text = if (isSelected) "این پوسته در حال استفاده است"
+                    else if (isLocked) "بازگشایی در نسخه VIP"
+                    else "فعال‌سازی این پوسته",
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp
                 )

@@ -54,6 +54,8 @@ android {
   buildFeatures {
     compose = true
     buildConfig = true
+    // ✅ لازم برای کامپایل فایل‌های AIDL (ارتباط با سرویس پرداخت مایکت)
+    aidl = true
   }
   testOptions { unitTests { isIncludeAndroidResources = true } }
   dependenciesInfo {

@@ -4,9 +4,12 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.safeDrawing
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Apps
 import androidx.compose.material.icons.filled.AutoAwesome
@@ -136,7 +139,7 @@ fun HomeScreen(
             ),
             SmartNodeItem(
                 id = "clipboard",
-                title = "کلیپبورد",
+                title = "کلیپ‌بورد",
                 codeName = "CLIP STACK",
                 icon = Icons.Default.ContentPaste,
                 neonColor = Color(0xFF00E5FF),
@@ -173,6 +176,10 @@ fun HomeScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
+                    // ✅ NEW: respect system bars (status bar top, navigation bar bottom,
+                    // display cutout). Background still extends edge-to-edge behind bars,
+                    // but the actual content is inside the safe area.
+                    .windowInsetsPadding(WindowInsets.safeDrawing)
                     .padding(horizontal = 16.dp, vertical = 14.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.SpaceBetween
