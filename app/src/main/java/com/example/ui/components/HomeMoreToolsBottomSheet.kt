@@ -63,23 +63,82 @@ data class HomeExtraTool(
 @Composable
 fun HomeMoreToolsBottomSheet(
     onDismissRequest: () -> Unit,
-    onNavigateToTest: () -> Unit,
+    onNavigateToDictionary: () -> Unit,
     onNavigateToEmoji: () -> Unit,
+    onNavigateToCalculator: () -> Unit,
+    onNavigateToUnitConverter: () -> Unit,
+    onNavigateToTextTools: () -> Unit,
+    onNavigateToKaomoji: () -> Unit,
+    onNavigateToDateTime: () -> Unit,
     onNavigateToIntro: () -> Unit,
-    onNavigateToAbout: () -> Unit
+    onNavigateToPrivacy: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
     val extraTools = listOf(
-        HomeExtraTool("دیکشنری هوشمند", "معانی، مترادف، متضاد و مثال", Icons.Default.MenuBook, Color(0xFF10B981), onNavigateToTest),
-        HomeExtraTool("کاوشگر ایموجی", "مجموعه کامل ایموجی و استیکر", Icons.Default.EmojiEmotions, Color(0xFFFFB800), onNavigateToEmoji),
-        HomeExtraTool("ماشین‌حساب کیبورد", "محاسبه سریع در هنگام تایپ", Icons.Default.Calculate, Color(0xFF06B6D4), onNavigateToTest),
-        HomeExtraTool("مبدل واحدها", "تبدیل طول، وزن، دما و...", Icons.Default.SwapHoriz, Color(0xFF8B5CF6), onNavigateToTest),
-        HomeExtraTool("جعبه‌ابزار پردازش متن", "شمارش کلمات، پاکسازی فاصله‌ها", Icons.Default.TextFields, Color(0xFFEC4899), onNavigateToTest),
-        HomeExtraTool("شکلک‌های متنی و نمادها", "کائوموجی‌های ژاپنی و نمادها", Icons.Default.Mood, Color(0xFFF97316), onNavigateToTest),
-        HomeExtraTool("تقویم و تاریخ شمسی", "درج بلادرنگ تاریخ و ساعت", Icons.Default.DateRange, Color(0xFF3B82F6), onNavigateToTest),
-        HomeExtraTool("راهنما و آموزش", "آشنایی با قابلیت‌های مخملی", Icons.Default.TipsAndUpdates, PrimaryCyan, onNavigateToIntro),
-        HomeExtraTool("حریم خصوصی و امنیت", "تضمین امنیت و ذخیره‌سازی محلی", Icons.Default.Policy, Color(0xFF64748B), onNavigateToAbout)
+        HomeExtraTool(
+            "دیکشنری هوشمند",
+            "معنی، مترادف، ترجمه و مثال",
+            Icons.Default.MenuBook,
+            Color(0xFF10B981),
+            onNavigateToDictionary
+        ),
+        HomeExtraTool(
+            "مرکز ایموجی و اکسپرشن",
+            "ایموجی، شکلک و نمادهای ویژه",
+            Icons.Default.EmojiEmotions,
+            Color(0xFFFFB800),
+            onNavigateToEmoji
+        ),
+        HomeExtraTool(
+            "ماشین حساب هوشمند",
+            "محاسبه سریع و درج نتیجه",
+            Icons.Default.Calculate,
+            Color(0xFF06B6D4),
+            onNavigateToCalculator
+        ),
+        HomeExtraTool(
+            "تبدیل واحدها",
+            "طول، وزن، دما و حجم",
+            Icons.Default.SwapHoriz,
+            Color(0xFF8B5CF6),
+            onNavigateToUnitConverter
+        ),
+        HomeExtraTool(
+            "جعبه ابزار متن",
+            "شمارش، معکوس، مرتب‌سازی",
+            Icons.Default.TextFields,
+            Color(0xFFEC4899),
+            onNavigateToTextTools
+        ),
+        HomeExtraTool(
+            "شکلک و نمادها",
+            "Kaomoji و نشانه‌های ویژه",
+            Icons.Default.Mood,
+            Color(0xFFF97316),
+            onNavigateToKaomoji
+        ),
+        HomeExtraTool(
+            "تاریخ و ساعت",
+            "تاریخ شمسی و میلادی",
+            Icons.Default.DateRange,
+            Color(0xFF3B82F6),
+            onNavigateToDateTime
+        ),
+        HomeExtraTool(
+            "راهنما و معرفی",
+            "آموزش کار با کیبورد مرسانا",
+            Icons.Default.TipsAndUpdates,
+            PrimaryCyan,
+            onNavigateToIntro
+        ),
+        HomeExtraTool(
+            "حریم خصوصی و قوانین",
+            "جزئیات قوانین و سیاست‌های حفظ اطلاعات",
+            Icons.Default.Policy,
+            Color(0xFF64748B),
+            onNavigateToPrivacy
+        )
     )
 
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
@@ -102,19 +161,23 @@ fun HomeMoreToolsBottomSheet(
                 ) {
                     Column {
                         Text(
-                            text = "🚀 سایر ابزارها و امکانات Clipbord",
+                            text = "سایر ابزارها و امکانات کیبورد مرسانا",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
-                            text = "تمام ابزارها از داخل کیبورد به صورت زنده در دسترس هستند",
+                            text = "ابزارهای کاربردی و پیشرفته برای تایپ هوشمندتر",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                     IconButton(onClick = onDismissRequest) {
-                        Icon(Icons.Default.Close, contentDescription = "بستن", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Icon(
+                            Icons.Default.Close,
+                            contentDescription = "بستن",
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
 
@@ -157,12 +220,13 @@ fun HomeMoreToolsBottomSheet(
                                     )
                                 }
                                 Spacer(modifier = Modifier.width(8.dp))
-                                Column {
+                                Column(modifier = Modifier.weight(1f)) {
                                     Text(
                                         text = tool.title,
                                         fontSize = 11.sp,
                                         fontWeight = FontWeight.Bold,
-                                        color = MaterialTheme.colorScheme.onSurface
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        maxLines = 1
                                     )
                                     Text(
                                         text = tool.description,

@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -59,7 +60,8 @@ fun HomeScreen(
     onNavigateToSettings: () -> Unit,
     onNavigateToVip: () -> Unit,
     onNavigateToAbout: () -> Unit,
-    onNavigateToIntro: () -> Unit
+    onNavigateToIntro: () -> Unit,
+    onNavigateToPrivacy: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
@@ -79,6 +81,17 @@ fun HomeScreen(
         onDispose {
             lifecycleOwner.lifecycle.removeObserver(observer)
         }
+    }
+
+    // Helper: shows a toast and navigates to the keyboard test screen so the user
+    // can use the tool from the keyboard toolbar.
+    fun openKeyboardTool(toolName: String) {
+        Toast.makeText(
+            context,
+            "$toolName از نوار ابزار داخل کیبورد مرسانا قابل دسترسی است. حالا کیبورد را باز کنید و آیکن آن را بزنید.",
+            Toast.LENGTH_LONG
+        ).show()
+        onNavigateToTest()
     }
 
     val smartNodes = remember {
@@ -165,8 +178,8 @@ fun HomeScreen(
                 .background(
                     Brush.verticalGradient(
                         colors = listOf(
-                            Color(0xFF030712), // Deep Sci-fi Space Black
-                            Color(0xFF0B1329), // Subtle Dark Navy Cyber Core
+                            Color(0xFF030712),
+                            Color(0xFF0B1329),
                             Color(0xFF020617)
                         )
                     )
@@ -176,20 +189,15 @@ fun HomeScreen(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    // ✅ NEW: respect system bars (status bar top, navigation bar bottom,
-                    // display cutout). Background still extends edge-to-edge behind bars,
-                    // but the actual content is inside the safe area.
                     .windowInsetsPadding(WindowInsets.safeDrawing)
                     .padding(horizontal = 16.dp, vertical = 14.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
-                // 1. Top Cyber Telemetry Header
                 CyberTelemetryHeader(
                     onVipClick = onNavigateToVip
                 )
 
-                // 2. Central Cybernetic Radial Control Center
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -222,7 +230,6 @@ fun HomeScreen(
                     )
                 }
 
-                // 3. Bottom Telemetry & Status Console
                 CyberTelemetryFooter(
                     activationState = activationState,
                     onFooterClick = {
@@ -234,7 +241,6 @@ fun HomeScreen(
                 )
             }
 
-            // Interactive Bottom Sheets
             if (showActivationWizard) {
                 ActivationWizardBottomSheet(
                     currentState = activationState,
@@ -255,21 +261,59 @@ fun HomeScreen(
             if (showMoreToolsSheet) {
                 HomeMoreToolsBottomSheet(
                     onDismissRequest = { showMoreToolsSheet = false },
-                    onNavigateToTest = {
+
+                    // Dictionary is a keyboard-only panel — route to test + toast
+                    onNavigateToDictionary = {
                         showMoreToolsSheet = false
-                        onNavigateToTest()
+                        openKeyboardTool("دیکشنری هوشمند")
                     },
+
+                    // Emoji has its own screen
                     onNavigateToEmoji = {
                         showMoreToolsSheet = false
                         onNavigateToEmoji()
                     },
+
+                    // Calculator — keyboard-only panel
+                    onNavigateToCalculator = {
+                        showMoreToolsSheet = false
+                        openKeyboardTool("ماشین حساب")
+                    },
+
+                    // Unit Converter — keyboard-only panel
+                    onNavigateToUnitConverter = {
+                        showMoreToolsSheet = false
+                        openKeyboardTool("تبدیل واحدها")
+                    },
+
+                    // Text Tools — keyboard-only panel
+                    onNavigateToTextTools = {
+                        showMoreToolsSheet = false
+                        openKeyboardTool("جعبه ابزار متن")
+                    },
+
+                    // Kaomoji — keyboard-only panel
+                    onNavigateToKaomoji = {
+                        showMoreToolsSheet = false
+                        openKeyboardTool("شکلک و نمادها")
+                    },
+
+                    // Date/Time — keyboard-only panel
+                    onNavigateToDateTime = {
+                        showMoreToolsSheet = false
+                        openKeyboardTool("تاریخ و ساعت")
+                    },
+
+                    // Intro screen
                     onNavigateToIntro = {
                         showMoreToolsSheet = false
                         onNavigateToIntro()
                     },
-                    onNavigateToAbout = {
+
+                    // Privacy screen
+                    onNavigateToPrivacy = {
                         showMoreToolsSheet = false
-                        onNavigateToAbout()
+                        onNavigateToPrivacy()
                     }
                 )
             }

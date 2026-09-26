@@ -30,8 +30,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.domain.smart.PersianDateTimeIntelligence
+import com.example.domain.shamsi.PersianDateUtils
 import com.example.themes.KeyboardTheme
+
+data class DateTimeFormatItem(
+    val title: String,
+    val formattedText: String,
+    val category: String
+)
 
 @Composable
 fun DateTimePanel(
@@ -39,7 +45,27 @@ fun DateTimePanel(
     onInsertText: (String) -> Unit,
     onClose: () -> Unit
 ) {
-    val formats = remember { PersianDateTimeIntelligence.getAvailableFormats() }
+    val now = remember { System.currentTimeMillis() }
+
+    val shamsiItems = remember(now) {
+        listOf(
+            DateTimeFormatItem("تاریخ شمسی (عددی)", PersianDateUtils.formatPersianDate(now), "شمسی"),
+            DateTimeFormatItem("تاریخ شمسی با نام ماه", PersianDateUtils.formatPersianDateWithMonthName(now), "شمسی"),
+            DateTimeFormatItem("تاریخ و ساعت شمسی", PersianDateUtils.formatPersianDateWithTime(now), "شمسی"),
+            DateTimeFormatItem("تاریخ شمسی با روز هفته", PersianDateUtils.formatPersianDateWithWeekday(now), "شمسی"),
+            DateTimeFormatItem("فقط ساعت (شمسی)", PersianDateUtils.formatPersianTime(now), "شمسی")
+        )
+    }
+
+    val miladiItems = remember(now) {
+        listOf(
+            DateTimeFormatItem("Gregorian (numeric)", PersianDateUtils.formatGregorianDate(now), "میلادی"),
+            DateTimeFormatItem("Gregorian with month name", PersianDateUtils.formatGregorianDateWithMonthName(now), "میلادی"),
+            DateTimeFormatItem("Gregorian date + time", PersianDateUtils.formatGregorianDateWithTime(now), "میلادی"),
+            DateTimeFormatItem("Gregorian with weekday", PersianDateUtils.formatGregorianDateWithWeekday(now), "میلادی"),
+            DateTimeFormatItem("Time only (Gregorian)", PersianDateUtils.formatGregorianTime(now), "میلادی")
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -63,7 +89,7 @@ fun DateTimePanel(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "📅 درج سریع تاریخ و ساعت شمسی",
+                    text = "📅 درج سریع تاریخ و ساعت",
                     color = theme.keyTextColor,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold
@@ -81,50 +107,90 @@ fun DateTimePanel(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            items(formats) { item ->
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = theme.keyBackgroundColor,
-                    border = BorderStroke(0.5.dp, theme.keyTopHighlightColor),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onInsertText(item.formattedText) }
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 10.dp, vertical = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Column {
-                            Text(
-                                text = item.title,
-                                color = theme.keySubTextColor,
-                                fontSize = 10.sp
-                            )
-                            Text(
-                                text = item.formattedText,
-                                color = theme.keyTextColor,
-                                fontSize = 13.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
+            // ---- Shamsi section ----
+            item {
+                SectionHeader(title = "🇮🇷 هجری شمسی", theme = theme)
+            }
+            items(shamsiItems) { item ->
+                FormatCard(item = item, theme = theme, onInsertText = onInsertText)
+            }
 
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = theme.accentColor.copy(alpha = 0.15f),
-                            border = BorderStroke(0.5.dp, theme.accentColor.copy(alpha = 0.4f))
-                        ) {
-                            Text(
-                                text = item.category,
-                                color = theme.accentColor,
-                                fontSize = 10.sp,
-                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                            )
-                        }
-                    }
-                }
+            item { Spacer(modifier = Modifier.height(6.dp)) }
+
+            // ---- Gregorian section ----
+            item {
+                SectionHeader(title = "🌍 میلادی (Gregorian)", theme = theme)
+            }
+            items(miladiItems) { item ->
+                FormatCard(item = item, theme = theme, onInsertText = onInsertText)
+            }
+        }
+    }
+}
+
+@Composable
+private fun SectionHeader(title: String, theme: KeyboardTheme) {
+    Surface(
+        shape = RoundedCornerShape(6.dp),
+        color = theme.surfaceColor,
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Text(
+            text = title,
+            color = theme.accentColor,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+        )
+    }
+}
+
+@Composable
+private fun FormatCard(
+    item: DateTimeFormatItem,
+    theme: KeyboardTheme,
+    onInsertText: (String) -> Unit
+) {
+    Surface(
+        shape = RoundedCornerShape(8.dp),
+        color = theme.keyBackgroundColor,
+        border = BorderStroke(0.5.dp, theme.keyTopHighlightColor),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onInsertText(item.formattedText) }
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = item.title,
+                    color = theme.keySubTextColor,
+                    fontSize = 10.sp
+                )
+                Text(
+                    text = item.formattedText,
+                    color = theme.keyTextColor,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+
+            Surface(
+                shape = RoundedCornerShape(6.dp),
+                color = theme.accentColor.copy(alpha = 0.15f),
+                border = BorderStroke(0.5.dp, theme.accentColor.copy(alpha = 0.4f))
+            ) {
+                Text(
+                    text = item.category,
+                    color = theme.accentColor,
+                    fontSize = 10.sp,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
+                )
             }
         }
     }

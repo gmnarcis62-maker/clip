@@ -84,7 +84,8 @@ fun AppNavigation(
                 onNavigateToSettings = { navController.navigate(NavRoutes.SETTINGS) },
                 onNavigateToVip = { navController.navigate(NavRoutes.VIP) },
                 onNavigateToAbout = { navController.navigate(NavRoutes.ABOUT) },
-                onNavigateToIntro = { navController.navigate(NavRoutes.APP_INTRO) }
+                onNavigateToIntro = { navController.navigate(NavRoutes.APP_INTRO) },
+                onNavigateToPrivacy = { navController.navigate(NavRoutes.PRIVACY_POLICY) }
             )
         }
 
