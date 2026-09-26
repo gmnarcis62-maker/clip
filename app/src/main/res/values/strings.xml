@@ -1,0 +1,16 @@
+<resources>
+    <string name="app_name">مرسانا</string>
+    <string name="app_full_title">مرسانا | کیبورد هوشمند فارسی</string>
+    <string name="subtype_persian">فارسی (ایران)</string>
+    <string name="subtype_english">English (US)</string>
+    
+    <!-- Developer & About Info -->
+    <string name="company_name">تیم نرم افزاری ردلاین سافت البرز</string>
+    <string name="company_manager">مهندس مهدی رضایی</string>
+    <string name="support_email">gmnarcis@gmail.com</string>
+    <string name="myket_dev_url">https://myket.ir/developer/dev-36089</string>
+    <string name="myket_app_url">https://myket.ir/app/red.line.clipbord</string>
+    <string name="myket_sku_vip">red.line.clipbord_pro</string>
+
+    <string name="double_back_exit">برای خروج دوباره دکمه بازگشت را بزنید</string>
+</resources>

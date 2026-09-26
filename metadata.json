@@ -1,0 +1,6 @@
+{
+  "name": "مرسانا | Mersana",
+  "description": "صفحه‌کلید هوشمند مرسانا - کیبورد فارسی مدرن، سریع و مجهز به هوش مصنوعی",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
