@@ -33,7 +33,8 @@ object Security {
         return try {
             val signatureAlgorithm = Signature.getInstance("SHA1withRSA")
             signatureAlgorithm.initVerify(publicKey)
-            signatureAlgorithm.update(signedData.toByteArray())
+            // ✅ Explicit UTF-8 charset — same one Myket uses to generate the signature
+            signatureAlgorithm.update(signedData.toByteArray(Charsets.UTF_8))
             val signatureBytes = Base64.decode(signature, Base64.DEFAULT)
             signatureAlgorithm.verify(signatureBytes)
         } catch (_: Exception) {

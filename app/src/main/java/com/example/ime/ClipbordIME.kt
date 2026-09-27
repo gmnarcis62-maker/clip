@@ -76,6 +76,7 @@ class ClipbordIME : InputMethodService(), LifecycleOwner, ViewModelStoreOwner, S
     private var isCapsLock by mutableStateOf(false)
     private var suggestions by mutableStateOf(listOf<String>())
     private var isPasswordField by mutableStateOf(false)
+    private var isNumericPasswordField by mutableStateOf(false)
     private var extractedTextForAi by mutableStateOf("")
 
     private var speechRecognizer: SpeechRecognizer? = null
@@ -162,7 +163,6 @@ class ClipbordIME : InputMethodService(), LifecycleOwner, ViewModelStoreOwner, S
         ensureWindowDecorViewOwners()
         startAndResumeLifecycle()
 
-        // If a cached compose view already has a parent from a previous session, detach it safely
         cachedComposeView?.let { existingView ->
             (existingView.parent as? ViewGroup)?.removeView(existingView)
             return existingView
@@ -230,7 +230,9 @@ class ClipbordIME : InputMethodService(), LifecycleOwner, ViewModelStoreOwner, S
                         }
                         isShifted = false
                         isCapsLock = false
-                        currentMode = KeyboardMode.TEXT
+                        if (currentMode != KeyboardMode.BIG_NUMBERS) {
+                            currentMode = KeyboardMode.TEXT
+                        }
                         updateSuggestionsAndExtractedText()
                     },
                     onModeChange = { mode ->
@@ -282,30 +284,66 @@ class ClipbordIME : InputMethodService(), LifecycleOwner, ViewModelStoreOwner, S
         ensureWindowDecorViewOwners()
         startAndResumeLifecycle()
 
-        // Check if password field
         isPasswordField = false
+        isNumericPasswordField = false
+
         info?.let {
             val inputType = it.inputType
+            val inputClass = inputType and InputType.TYPE_MASK_CLASS
             val variation = inputType and InputType.TYPE_MASK_VARIATION
-            if (variation == InputType.TYPE_TEXT_VARIATION_PASSWORD ||
+
+            // 1. تشخیص فیلد رمز عبور متنی
+            if (
+                variation == InputType.TYPE_TEXT_VARIATION_PASSWORD ||
                 variation == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
-                variation == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD ||
-                inputType and InputType.TYPE_MASK_CLASS == InputType.TYPE_CLASS_NUMBER &&
-                variation == InputType.TYPE_NUMBER_VARIATION_PASSWORD
+                variation == InputType.TYPE_TEXT_VARIATION_WEB_PASSWORD
             ) {
                 isPasswordField = true
             }
 
-            if (inputType and InputType.TYPE_MASK_CLASS == InputType.TYPE_CLASS_NUMBER ||
-                inputType and InputType.TYPE_MASK_CLASS == InputType.TYPE_CLASS_PHONE
+            // 2. تشخیص فیلد رمز عبور عددی (رمز دوم بانکی، پین‌کد و...)
+            if (
+                inputClass == InputType.TYPE_CLASS_NUMBER &&
+                (variation == InputType.TYPE_NUMBER_VARIATION_PASSWORD ||
+                 variation == InputType.TYPE_NUMBER_VARIATION_NORMAL) &&
+                (it.inputType and InputType.TYPE_NUMBER_FLAG_DECIMAL == 0) &&
+                (it.inputType and InputType.TYPE_NUMBER_FLAG_SIGNED == 0) &&
+                isLikelySecretField(it)
             ) {
-                currentMode = KeyboardMode.NUMBERS
-            } else {
-                currentMode = KeyboardMode.TEXT
+                isNumericPasswordField = true
+                isPasswordField = true
+            }
+
+            // 3. سوییچ به حالت مناسب
+            currentMode = when {
+                isNumericPasswordField -> KeyboardMode.BIG_NUMBERS
+                inputClass == InputType.TYPE_CLASS_NUMBER ||
+                        inputClass == InputType.TYPE_CLASS_PHONE -> KeyboardMode.NUMBERS
+                else -> KeyboardMode.TEXT
             }
         }
 
         updateSuggestionsAndExtractedText()
+    }
+
+    /**
+     * بررسی می‌کند که آیا این فیلد احتمالاً یک فیلد حساس عددی (رمز دوم، CVV2، پین) است.
+     * با استفاده از HintText و imeOptions.
+     */
+    private fun isLikelySecretField(info: EditorInfo): Boolean {
+        val hint = info.hintText?.toString()?.lowercase() ?: ""
+        val secretKeywords = listOf(
+            "رمز", "پین", "pin", "password", "cvv", "cvc",
+            "otp", "کد تایید", "کد تأیید", "شماره کارت", "second"
+        )
+        if (secretKeywords.any { hint.contains(it) }) return true
+
+        // رمز دوم بانکی معمولاً NO_SUGGESTIONS یا PASSWORD دارد
+        val imeOptions = info.imeOptions
+        val noSuggestions = (imeOptions and EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING) != 0 ||
+                (imeOptions and EditorInfo.IME_FLAG_NO_FULLSCREEN) != 0
+
+        return noSuggestions
     }
 
     override fun onFinishInputView(finishingInput: Boolean) {
@@ -327,7 +365,9 @@ class ClipbordIME : InputMethodService(), LifecycleOwner, ViewModelStoreOwner, S
                 }
                 KeyType.SPACE -> {
                     val textBefore = ic.getTextBeforeCursor(20, 0)?.toString() ?: ""
-                    if (currentLanguage == KeyboardLanguage.PERSIAN && PersianAutoFixEngine.shouldConvertSpaceToHalfSpace(textBefore)) {
+                    if (currentLanguage == KeyboardLanguage.PERSIAN &&
+                        PersianAutoFixEngine.shouldConvertSpaceToHalfSpace(textBefore)
+                    ) {
                         ic.commitText("\u200C", 1)
                     } else {
                         ic.commitText(" ", 1)
@@ -403,7 +443,6 @@ class ClipbordIME : InputMethodService(), LifecycleOwner, ViewModelStoreOwner, S
                 return
             }
 
-            // 1. Extract selected text or surrounding text for AI
             val selectedText = ic.getSelectedText(0)?.toString()
             if (!selectedText.isNullOrBlank()) {
                 extractedTextForAi = selectedText.trim()
@@ -412,7 +451,6 @@ class ClipbordIME : InputMethodService(), LifecycleOwner, ViewModelStoreOwner, S
                 extractedTextForAi = textBefore.trim()
             }
 
-            // 2. Compute suggestions for next word / prefix
             val textBefore = ic.getTextBeforeCursor(30, 0)?.toString() ?: ""
             val words = textBefore.split(" ", "\n", "\t")
             val currentWord = words.lastOrNull() ?: ""

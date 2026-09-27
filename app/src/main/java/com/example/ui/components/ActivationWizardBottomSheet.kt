@@ -24,12 +24,10 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Keyboard
-import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material.icons.filled.OpenInNew
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Security
@@ -50,6 +48,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.rememberModalBottomSheetState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -58,7 +57,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -84,19 +82,21 @@ fun ActivationWizardBottomSheet(
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     val scrollState = rememberScrollState()
 
-    // Determine starting step based on actual system state
-    var currentStep by remember(currentState) {
-        mutableIntStateOf(
-            when (currentState) {
-                KeyboardActivationState.NOT_ENABLED -> 1
-                KeyboardActivationState.ENABLED_NOT_DEFAULT -> 3
-                KeyboardActivationState.DEFAULT -> 4
-                else -> 1
-            }
-        )
-    }
+    // ✅ Initialize once based on the very first state snapshot. Do NOT use
+    //    currentState as a remember key here, because onRefreshState() updates
+    //    the parent state on every verify step, which would otherwise reset the
+    //    wizard back to step 1 in the middle of navigation.
+    var currentStep by remember { mutableIntStateOf(initialStepFor(currentState)) }
 
     var showTroubleshooting by remember { mutableStateOf(false) }
+
+    // ✅ When the external state actually becomes DEFAULT (e.g. user selected
+    //    Mersana in the picker), jump straight to the success step.
+    LaunchedEffect(currentState) {
+        if (currentState == KeyboardActivationState.DEFAULT && currentStep < 4) {
+            currentStep = 4
+        }
+    }
 
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
         ModalBottomSheet(
@@ -136,7 +136,7 @@ fun ActivationWizardBottomSheet(
                         Spacer(modifier = Modifier.width(10.dp))
                         Column {
                             Text(
-                                text = "راهنمای فعال‌سازی کیبورد Clipbord",
+                                text = "راهنمای فعال‌سازی کیبورد مرسانا",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
@@ -197,12 +197,10 @@ fun ActivationWizardBottomSheet(
                             onCheckProgress = {
                                 onRefreshState()
                                 val newState = ImeActivationManager.checkActivationState(context)
-                                if (newState == KeyboardActivationState.ENABLED_NOT_DEFAULT) {
-                                    currentStep = 3
-                                } else if (newState == KeyboardActivationState.DEFAULT) {
-                                    currentStep = 4
-                                } else {
-                                    Toast.makeText(context, "هنوز کلید Clipbord در تنظیمات روشن نشده است.", Toast.LENGTH_SHORT).show()
+                                when (newState) {
+                                    KeyboardActivationState.ENABLED_NOT_DEFAULT -> currentStep = 3
+                                    KeyboardActivationState.DEFAULT -> currentStep = 4
+                                    else -> Toast.makeText(context, "هنوز کلید مرسانا در تنظیمات روشن نشده است.", Toast.LENGTH_SHORT).show()
                                 }
                             },
                             onNext = { currentStep = 3 }
@@ -220,7 +218,7 @@ fun ActivationWizardBottomSheet(
                                 if (newState == KeyboardActivationState.DEFAULT) {
                                     currentStep = 4
                                 } else {
-                                    Toast.makeText(context, "لطفاً از پنجره باز شده، Clipbord را انتخاب کنید.", Toast.LENGTH_SHORT).show()
+                                    Toast.makeText(context, "لطفاً از پنجره باز شده، مرسانا را انتخاب کنید.", Toast.LENGTH_SHORT).show()
                                 }
                             }
                         )
@@ -267,7 +265,7 @@ fun ActivationWizardBottomSheet(
                                 )
                             }
                             Text(
-                                text = if (showTroubleshooting) "بستن ▲" else "مشاهده ▼",
+                                text = if (showTroubleshooting) "بستن ▾" else "مشاهده ▸",
                                 fontSize = 11.sp,
                                 color = PrimaryCyan
                             )
@@ -290,7 +288,7 @@ fun ActivationWizardBottomSheet(
                 // General device compatibility note
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
-                    text = "💡 نکته: ظاهر صفحه تنظیمات در گوشی‌های سامسونگ، شیائومی، هواوی، پیکسل و... ممکن است اندکی متفاوت باشد، اما نام Clipbord در لیست کیبوردهای مدیریت‌شده قرار دارد.",
+                    text = "💡 نکته: ظاهر صفحه تنظیمات در گوشی‌های سامسونگ، شیائومی، هواوی، پیکسل و... ممکن است اندکی متفاوت باشد، اما نام مرسانا در لیست کیبوردهای مدیریت‌شده قرار دارد.",
                     fontSize = 10.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 15.sp,
@@ -300,6 +298,13 @@ fun ActivationWizardBottomSheet(
             }
         }
     }
+}
+
+private fun initialStepFor(state: KeyboardActivationState): Int = when (state) {
+    KeyboardActivationState.NOT_ENABLED -> 1
+    KeyboardActivationState.ENABLED_NOT_DEFAULT -> 3
+    KeyboardActivationState.DEFAULT -> 4
+    else -> 1
 }
 
 // === Sub-components for Wizard Steps ===
@@ -313,7 +318,6 @@ private fun StepOneContent(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Educational Mockup
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surfaceVariant,
@@ -380,7 +384,7 @@ private fun StepOneContent(
             shape = RoundedCornerShape(12.dp),
             modifier = Modifier.fillMaxWidth().height(40.dp)
         ) {
-            Text("قبلاً باز کرده‌ام، مرحله بعد →", fontSize = 12.sp)
+            Text("قبلاً باز کرده‌ام، مرحله بعد ←", fontSize = 12.sp)
         }
     }
 }
@@ -395,7 +399,6 @@ private fun StepTwoContent(
         modifier = Modifier.fillMaxWidth(),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Educational Mockup of the Toggle Switch
         Surface(
             shape = RoundedCornerShape(16.dp),
             color = MaterialTheme.colorScheme.surfaceVariant,
@@ -404,14 +407,13 @@ private fun StepTwoContent(
         ) {
             Column(modifier = Modifier.padding(14.dp)) {
                 Text(
-                    text = "مرحله ۲ از ۳: روشن کردن کلید Clipbord",
+                    text = "مرحله ۲ از ۳: روشن کردن کلید مرسانا",
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(8.dp))
 
-                // Simulated Android Settings Row
                 Surface(
                     shape = RoundedCornerShape(10.dp),
                     color = MaterialTheme.colorScheme.surface,
@@ -455,7 +457,6 @@ private fun StepTwoContent(
 
                 Spacer(modifier = Modifier.height(10.dp))
 
-                // Security Note Box
                 Surface(
                     shape = RoundedCornerShape(8.dp),
                     color = Color(0xFFFFB800).copy(alpha = 0.12f),
@@ -474,7 +475,7 @@ private fun StepTwoContent(
                             modifier = Modifier.size(18.dp)
                         )
                         Text(
-                            text = "هشدار امنیتی اندروید: سیستم‌عامل اندروید هنگام فعال‌سازی هر کیبورد جدیدی یک پیام استاندارد نمایش می‌دهد. کیبورد Clipbord حریم خصوصی شما را کاملاً رعایت کرده و اطلاعات شما امن است.",
+                            text = "هشدار امنیتی اندروید: سیستم‌عامل اندروید هنگام فعال‌سازی هر کیبورد جدیدی یک پیام استاندارد نشان می‌دهد. کیبورد مرسانا حریم خصوصی شما را کاملاً رعایت کرده و اطلاعات شما امن است.",
                             fontSize = 10.sp,
                             color = MaterialTheme.colorScheme.onSurface,
                             lineHeight = 15.sp
@@ -519,7 +520,7 @@ private fun StepTwoContent(
                 shape = RoundedCornerShape(10.dp),
                 modifier = Modifier.weight(1f).height(38.dp)
             ) {
-                Text("مرحله ۳ →", fontSize = 11.sp)
+                Text("مرحله ۳ ←", fontSize = 11.sp)
             }
         }
     }
@@ -558,7 +559,7 @@ private fun StepThreeContent(
 
                 Spacer(modifier = Modifier.height(10.dp))
                 Text(
-                    text = "مرحله ۳ از ۳: انتخاب مرسانا به عنوان کیبورد اصلی",
+                    text = "مرحله ۳ از ۳: انتخاب مرسانا به‌عنوان کیبورد اصلی",
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface,
@@ -781,7 +782,7 @@ private fun StepDot(
             ),
         contentAlignment = Alignment.Center
     ) {
-        if (isCompleted || isCheck && isCompleted) {
+        if (isCompleted) {
             Icon(Icons.Default.CheckCircle, null, tint = Color.Black, modifier = Modifier.size(16.dp))
         } else {
             Text(

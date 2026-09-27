@@ -4,7 +4,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -47,6 +46,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -87,6 +87,14 @@ fun DictionaryPanel(
     val repo = ClipbordApp.instance.dictionaryRepository
     val aiRepo = ClipbordApp.instance.aiRepository
     val ttsEngine = remember { DictionaryTtsEngine(context) }
+
+    // ✅ Shut down the TTS engine when this panel leaves the composition to
+    //    prevent the underlying Android TTS service from leaking.
+    DisposableEffect(ttsEngine) {
+        onDispose {
+            ttsEngine.shutdown()
+        }
+    }
 
     var searchResults by remember { mutableStateOf<List<DictionaryItemResult>>(emptyList()) }
     var selectedEntry by remember { mutableStateOf<DictionaryEntry?>(null) }
@@ -184,7 +192,6 @@ fun DictionaryPanel(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                // ✅ ارتفاع کادر جستجو افزایش یافت تا متن کامل نمایش داده شود
                 OutlinedTextField(
                     value = searchQuery,
                     onValueChange = onSearchQueryChange,
@@ -581,7 +588,10 @@ fun DictionaryPanel(
                                 border = BorderStroke(0.5.dp, theme.keyTopHighlightColor),
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .clickable { selectedEntry = fav }
+                                    .clickable {
+                                        scope.launch { repo.recordSearch(fav.word, fav.language) }
+                                        selectedEntry = fav
+                                    }
                             ) {
                                 Row(
                                     modifier = Modifier
@@ -780,6 +790,14 @@ fun DictionaryPanel(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .clickable {
+                                    scope.launch {
+                                        val lang = when (selectedTab) {
+                                            1 -> "fa"
+                                            2 -> "en"
+                                            else -> null
+                                        }
+                                        repo.recordSearch(searchQuery, lang)
+                                    }
                                     when (res) {
                                         is DictionaryItemResult.Global -> selectedEntry = res.entry
                                         is DictionaryItemResult.Personal -> selectedPersonalEntry = res.entry

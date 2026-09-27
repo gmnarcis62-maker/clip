@@ -47,8 +47,15 @@ class DictionaryRepository(private val dao: DictionaryDao) {
     /**
      * Searches across Personal Dictionary (highest priority) and Global Dictionary.
      * Supports Exact, Prefix, Substring, and Fuzzy matching.
+     *
+     * ✅ Note: this method does NOT write to history anymore. Live search on every
+     * keystroke would otherwise pollute the history with every intermediate prefix.
+     * Use [recordSearch] explicitly when the user actually commits to a search.
      */
-    suspend fun search(query: String, language: String? = null): List<DictionaryItemResult> = withContext(Dispatchers.IO) {
+    suspend fun search(
+        query: String,
+        language: String? = null
+    ): List<DictionaryItemResult> = withContext(Dispatchers.IO) {
         if (query.isBlank()) return@withContext emptyList()
 
         ensureDatabasePopulated()
@@ -56,22 +63,13 @@ class DictionaryRepository(private val dao: DictionaryDao) {
         val normalized = PersianTextNormalizer.normalize(query)
         val results = mutableListOf<DictionaryItemResult>()
 
-        // 1. Record in History
-        dao.insertHistory(
-            DictionaryHistoryEntry(
-                query = query.trim(),
-                normalizedQuery = normalized,
-                language = language ?: "fa"
-            )
-        )
-
-        // 2. Search Personal Dictionary FIRST (Top Priority)
+        // 1. Search Personal Dictionary FIRST (Top Priority)
         val personalMatches = dao.searchPersonalEntries(normalized)
         personalMatches.forEach {
             results.add(DictionaryItemResult.Personal(it))
         }
 
-        // 3. Search Global Dictionary
+        // 2. Search Global Dictionary
         // Exact Match
         val exact = if (language != null) {
             dao.getExactMatchByLang(normalized, language)
@@ -100,7 +98,7 @@ class DictionaryRepository(private val dao: DictionaryDao) {
             }
         }
 
-        // 4. Fuzzy Levenshtein Search if few results
+        // 3. Fuzzy Levenshtein Search if few results
         if (results.size < 5) {
             val all = dao.getAllEntries()
             for (entry in all) {
@@ -114,6 +112,23 @@ class DictionaryRepository(private val dao: DictionaryDao) {
         }
 
         results
+    }
+
+    /**
+     * ✅ Records a search into history — call this only when the user commits
+     * to a search (e.g., taps a result). Avoids history pollution from live typing.
+     */
+    suspend fun recordSearch(query: String, language: String? = null) = withContext(Dispatchers.IO) {
+        val trimmed = query.trim()
+        if (trimmed.length < 2) return@withContext
+
+        dao.insertHistory(
+            DictionaryHistoryEntry(
+                query = trimmed,
+                normalizedQuery = PersianTextNormalizer.normalize(trimmed),
+                language = language ?: "fa"
+            )
+        )
     }
 
     suspend fun getEntryById(id: Long): DictionaryEntry? = withContext(Dispatchers.IO) {
@@ -139,7 +154,12 @@ class DictionaryRepository(private val dao: DictionaryDao) {
     // Personal Dictionary operations
     fun getPersonalEntriesFlow(): Flow<List<PersonalDictionaryEntry>> = dao.getAllPersonalEntriesFlow()
 
-    suspend fun addPersonalWord(word: String, definition: String, synonyms: String = "", note: String = ""): Long = withContext(Dispatchers.IO) {
+    suspend fun addPersonalWord(
+        word: String,
+        definition: String,
+        synonyms: String = "",
+        note: String = ""
+    ): Long = withContext(Dispatchers.IO) {
         val entry = PersonalDictionaryEntry(
             word = word.trim(),
             normalizedWord = PersianTextNormalizer.normalize(word),

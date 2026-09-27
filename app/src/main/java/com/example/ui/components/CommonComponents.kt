@@ -26,7 +26,6 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
@@ -40,7 +39,6 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ui.theme.PrimaryCyan
@@ -182,8 +180,11 @@ fun SectionTitle(
     }
 }
 
+/**
+ * ✅ Solid primary button — renamed from PersianGradientButton for accuracy.
+ */
 @Composable
-fun PersianGradientButton(
+fun PersianPrimaryButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
@@ -200,6 +201,61 @@ fun PersianGradientButton(
         colors = ButtonDefaults.buttonColors(
             containerColor = PrimaryCyan,
             contentColor = Color(0xFF07211E)
+        )
+    ) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.Center
+        ) {
+            if (icon != null) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    modifier = Modifier.size(20.dp)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+            }
+            Text(
+                text = text,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+}
+
+/**
+ * ✅ Real gradient button (PrimaryCyan → SecondaryGold).
+ * Use this when you actually want the visual gradient.
+ */
+@Composable
+fun PersianGradientButton(
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    enabled: Boolean = true
+) {
+    val gradientBrush = Brush.horizontalGradient(
+        colors = listOf(PrimaryCyan, SecondaryGold)
+    )
+
+    Button(
+        onClick = onClick,
+        enabled = enabled,
+        modifier = modifier
+            .fillMaxWidth()
+            .height(52.dp)
+            .then(
+                if (enabled) Modifier.background(gradientBrush, RoundedCornerShape(14.dp))
+                else Modifier
+            ),
+        shape = RoundedCornerShape(14.dp),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color.Transparent,
+            contentColor = Color(0xFF07211E),
+            disabledContainerColor = PrimaryCyan.copy(alpha = 0.4f),
+            disabledContentColor = Color(0xFF07211E).copy(alpha = 0.6f)
         )
     ) {
         Row(

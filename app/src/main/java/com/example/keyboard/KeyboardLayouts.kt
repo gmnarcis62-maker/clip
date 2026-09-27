@@ -3,7 +3,8 @@ package com.example.keyboard
 enum class KeyboardMode {
     TEXT,
     NUMBERS,
-    SYMBOLS
+    SYMBOLS,
+    BIG_NUMBERS  // ✅ برای رمز دوم و کادرهای عددی حساس
 }
 
 enum class KeyboardLanguage {
@@ -53,9 +54,6 @@ object KeyboardLayouts {
             )
         }
 
-        // ✅ ردیف ۱: راست → ج ، چپ → ض
-        //    ترتیب چپ به راست روی صفحه: ض ص ث ق ف غ ع ه خ ح ج
-        //    (چون RTL، اولین آیتم لیست = راست)
         val row1Letters = listOf("ج", "ح", "خ", "ه", "ع", "غ", "ف", "ق", "ث", "ص", "ض")
         val row1 = row1Letters.map { char ->
             val popups = when (char) {
@@ -66,15 +64,9 @@ object KeyboardLayouts {
                 "ف" -> listOf("ق", "ف")
                 else -> listOf(char)
             }
-            KeyItem(
-                label = char,
-                output = char,
-                popupOptions = popups,
-                weight = 1.0f
-            )
+            KeyItem(label = char, output = char, popupOptions = popups, weight = 1.0f)
         }
 
-        // ✅ ردیف ۲: راست → گ ، چپ → ش
         val row2Letters = listOf("گ", "ک", "م", "ن", "ت", "ا", "ل", "ب", "ی", "س", "ش")
         val row2 = row2Letters.map { char ->
             val popups = when (char) {
@@ -88,15 +80,9 @@ object KeyboardLayouts {
                 "س" -> listOf("ش", "س")
                 else -> emptyList()
             }
-            KeyItem(
-                label = char,
-                output = char,
-                popupOptions = popups,
-                weight = 1.0f
-            )
+            KeyItem(label = char, output = char, popupOptions = popups, weight = 1.0f)
         }
 
-        // ✅ ردیف ۳: راست → . ، چپ → ظ
         val row3 = listOf(
             KeyItem(label = ".", output = ".", popupOptions = listOf(".", "،", "…", ":", "!")),
             KeyItem(label = "چ", output = "چ", popupOptions = listOf("ج", "چ")),
@@ -136,12 +122,7 @@ object KeyboardLayouts {
 
         val row1 = row1Chars.mapIndexed { index, char ->
             val num = "${(index + 1) % 10}"
-            KeyItem(
-                label = char,
-                subLabel = num,
-                output = char,
-                popupOptions = listOf(num, char)
-            )
+            KeyItem(label = char, subLabel = num, output = char, popupOptions = listOf(num, char))
         }
 
         val row2 = row2Chars.map { KeyItem(label = it, output = it) }
@@ -236,6 +217,31 @@ object KeyboardLayouts {
             KeyItem(label = "↵", type = KeyType.ENTER, weight = 1.4f)
         )
         return listOf(row1, row2, row3, bottomRow)
+    }
+
+    /**
+     * ✅ چیدمان اعداد درشت برای کادرهای حساس (رمز دوم بانکی، پین‌کد و...)
+     * گرید ۳×۴: ۱ ۲ ۳ / ۴ ۵ ۶ / ۷ ۸ ۹ / ⌫ ۰ ↵
+     */
+    fun getBigNumbersRows(
+        usePersianDigits: Boolean = true
+    ): List<List<KeyItem>> {
+        val d = if (usePersianDigits) {
+            listOf("۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹", "۰")
+        } else {
+            listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0")
+        }
+
+        val row1 = listOf(d[0], d[1], d[2]).map { KeyItem(label = it, output = it, weight = 1f) }
+        val row2 = listOf(d[3], d[4], d[5]).map { KeyItem(label = it, output = it, weight = 1f) }
+        val row3 = listOf(d[6], d[7], d[8]).map { KeyItem(label = it, output = it, weight = 1f) }
+        val row4 = listOf(
+            KeyItem(label = "⌫", type = KeyType.BACKSPACE, weight = 1f),
+            KeyItem(label = d[9], output = d[9], weight = 1f),
+            KeyItem(label = "↵", type = KeyType.ENTER, weight = 1f)
+        )
+
+        return listOf(row1, row2, row3, row4)
     }
 
     private fun getBottomRow(isPersian: Boolean, showHalfSpace: Boolean): List<KeyItem> {
