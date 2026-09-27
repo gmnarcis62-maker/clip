@@ -277,9 +277,9 @@ class ClipbordIME : InputMethodService(), LifecycleOwner, ViewModelStoreOwner, S
                         startVoiceRecognition()
                     },
                     onSettingsClick = {
+                        // ✅ فقط MainActivity را باز کن — بدون پارامتر اضافی
                         val intent = Intent(this@ClipbordIME, MainActivity::class.java).apply {
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                            putExtra(MainActivity.EXTRA_NAVIGATE_TO, MainActivity.ROUTE_SETTINGS)
                         }
                         startActivity(intent)
                     },
