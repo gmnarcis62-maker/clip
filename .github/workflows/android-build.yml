@@ -46,11 +46,10 @@ jobs:
           -validity 10000 \
           -dname "CN=Android Debug,O=Android,C=US"
 
-    # ✅ ایجاد .env از GitHub Secrets (کلید واقعی، نه Dummy)
+    # ✅ فقط ATRIA_API_KEY از GitHub Secrets
     - name: Create .env from GitHub Secrets
       run: |
         echo "ATRIA_API_KEY=${{ secrets.ATRIA_API_KEY }}" > .env
-        echo "GEMINI_API_KEY=${{ secrets.GEMINI_API_KEY }}" >> .env
         echo "FIREBASE_APPCHECK_DEBUG_TOKEN=" >> .env
 
     - name: Generate Gradle Wrapper
