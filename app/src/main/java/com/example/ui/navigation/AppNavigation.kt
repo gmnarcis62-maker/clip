@@ -30,7 +30,6 @@ import com.example.ui.screens.SplashScreen
 import com.example.ui.screens.TextToolsScreen
 import com.example.ui.screens.ThemesScreen
 import com.example.ui.screens.UnitConverterScreen
-import com.example.ui.screens.VipScreen
 
 object NavRoutes {
     const val SPLASH = "splash"
@@ -41,11 +40,9 @@ object NavRoutes {
     const val THEMES = "themes"
     const val EMOJI_EXPLORER = "emoji_explorer"
     const val SETTINGS = "settings"
-    const val VIP = "vip"
     const val ABOUT = "about"
     const val APP_INTRO = "app_intro"
     const val PRIVACY_POLICY = "privacy_policy"
-    // ✅ مسیرهای جدید برای ابزارهای مستقل
     const val DICTIONARY = "dictionary"
     const val CALCULATOR = "calculator"
     const val UNIT_CONVERTER = "unit_converter"
@@ -95,11 +92,9 @@ fun AppNavigation(
                 onNavigateToSuggestions = { navController.navigate(NavRoutes.SETTINGS) },
                 onNavigateToVoice = { navController.navigate(NavRoutes.SETTINGS) },
                 onNavigateToSettings = { navController.navigate(NavRoutes.SETTINGS) },
-                onNavigateToVip = { navController.navigate(NavRoutes.VIP) },
                 onNavigateToAbout = { navController.navigate(NavRoutes.ABOUT) },
                 onNavigateToIntro = { navController.navigate(NavRoutes.APP_INTRO) },
                 onNavigateToPrivacy = { navController.navigate(NavRoutes.PRIVACY_POLICY) },
-                // ✅ مسیرهای جدید
                 onNavigateToDictionary = { navController.navigate(NavRoutes.DICTIONARY) },
                 onNavigateToCalculator = { navController.navigate(NavRoutes.CALCULATOR) },
                 onNavigateToUnitConverter = { navController.navigate(NavRoutes.UNIT_CONVERTER) },
@@ -110,10 +105,7 @@ fun AppNavigation(
         }
 
         composable(NavRoutes.AI_ASSISTANT) {
-            AiAssistantScreen(
-                onBackClick = { navController.popBackStack() },
-                onNavigateToVip = { navController.navigate(NavRoutes.VIP) }
-            )
+            AiAssistantScreen(onBackClick = { navController.popBackStack() })
         }
 
         composable(NavRoutes.KEYBOARD_TEST) {
@@ -125,10 +117,7 @@ fun AppNavigation(
         }
 
         composable(NavRoutes.THEMES) {
-            ThemesScreen(
-                onBackClick = { navController.popBackStack() },
-                onNavigateToVip = { navController.navigate(NavRoutes.VIP) }
-            )
+            ThemesScreen(onBackClick = { navController.popBackStack() })
         }
 
         composable(NavRoutes.EMOJI_EXPLORER) {
@@ -141,10 +130,6 @@ fun AppNavigation(
                 onNavigateToThemes = { navController.navigate(NavRoutes.THEMES) },
                 onNavigateToAi = { navController.navigate(NavRoutes.AI_ASSISTANT) }
             )
-        }
-
-        composable(NavRoutes.VIP) {
-            VipScreen(onBackClick = { navController.popBackStack() })
         }
 
         composable(NavRoutes.ABOUT) {
@@ -163,7 +148,6 @@ fun AppNavigation(
             PrivacyPolicyScreen(onBackClick = { navController.popBackStack() })
         }
 
-        // ✅ صفحات ابزارهای مستقل
         composable(NavRoutes.DICTIONARY) {
             DictionaryScreen(onBackClick = { navController.popBackStack() })
         }

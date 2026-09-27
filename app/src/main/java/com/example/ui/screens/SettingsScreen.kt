@@ -6,6 +6,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -20,10 +21,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.Psychology
-import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material.icons.filled.Vibration
-import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -53,7 +52,6 @@ import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ClipbordApp
-import com.example.ai.data.AiConfig
 import com.example.domain.shamsi.PersianDateUtils
 import com.example.themes.KeyboardTheme
 import com.example.themes.ThemeManager
@@ -73,7 +71,6 @@ fun SettingsScreen(
     val preferences = ClipbordApp.instance.preferences
     val scope = rememberCoroutineScope()
 
-    val isVip by preferences.isVip.collectAsState(initial = false)
     val darkMode by preferences.darkMode.collectAsState(initial = "SYSTEM")
     val themeId by preferences.themeId.collectAsState(initial = "turquoise")
     val heightRatio by preferences.keyboardHeightRatio.collectAsState(initial = 1.0f)
@@ -90,7 +87,6 @@ fun SettingsScreen(
     val aiEnabled by preferences.aiEnabled.collectAsState(initial = true)
     val aiButtonVisible by preferences.aiButtonVisible.collectAsState(initial = true)
     val aiTone by preferences.aiDefaultTone.collectAsState(initial = "NEUTRAL")
-    val aiUsageCount by preferences.aiDailyUsageCount.collectAsState(initial = 0)
 
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
         Scaffold(
@@ -119,24 +115,33 @@ fun SettingsScreen(
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            SectionTitle(title = "دستیار هوش مصنوعی مرسانا", icon = Icons.Default.AutoAwesome)
+                            SectionTitle(
+                                title = "دستیار هوش مصنوعی مرسانا",
+                                icon = Icons.Default.AutoAwesome
+                            )
                             Button(
                                 onClick = onNavigateToAi,
                                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFB800)),
                                 shape = RoundedCornerShape(8.dp),
                                 modifier = Modifier.height(34.dp)
                             ) {
-                                Text("تنظیمات AI", color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                                Text(
+                                    "تنظیمات AI",
+                                    color = Color.Black,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
 
                         Spacer(modifier = Modifier.height(6.dp))
 
+                        // ✅ بدون VIP / quota
                         Text(
-                            text = if (isVip) "وضعیت: اشتراک ویژه VIP (نامحدود)" else "استفاده امروز: ${PersianDateUtils.toPersianDigits(aiUsageCount)} از ${PersianDateUtils.toPersianDigits(AiConfig.FREE_DAILY_REQUEST_LIMIT)}",
+                            text = "✨ همه‌ی امکانات هوش مصنوعی برای شما فعال است (دسترسی نامحدود)",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (isVip) Color(0xFF10B981) else Color(0xFFFFB800)
+                            color = Color(0xFF10B981)
                         )
 
                         Spacer(modifier = Modifier.height(10.dp))
@@ -159,8 +164,15 @@ fun SettingsScreen(
 
                         Spacer(modifier = Modifier.height(10.dp))
 
-                        Text("لحن پیش‌فرض هوش مصنوعی:", fontWeight = FontWeight.SemiBold, fontSize = 12.sp)
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(
+                            "لحن پیش‌فرض هوش مصنوعی:",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 12.sp
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
                             listOf(
                                 "NEUTRAL" to "معمولی",
                                 "FRIENDLY" to "دوستانه",
@@ -182,7 +194,10 @@ fun SettingsScreen(
                 // Appearance, Size & Font with LIVE PREVIEW
                 item {
                     PersianCard {
-                        SectionTitle(title = "ظاهر، اندازه و چیدمان", icon = Icons.Default.Palette)
+                        SectionTitle(
+                            title = "ظاهر، اندازه و چیدمان",
+                            icon = Icons.Default.Palette
+                        )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
@@ -192,21 +207,41 @@ fun SettingsScreen(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Column {
-                                Text("پوسته کیبورد", fontWeight = FontWeight.Bold, fontSize = 14.sp)
-                                Text("انتخاب رنگ و طرح دلخواه برای کیبورد", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
+                                Text(
+                                    "پوسته کیبورد",
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 14.sp
+                                )
+                                Text(
+                                    "انتخاب رنگ و طرح دلخواه برای کیبورد",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 11.sp
+                                )
                             }
                             Button(
                                 onClick = onNavigateToThemes,
                                 colors = ButtonDefaults.buttonColors(containerColor = PrimaryCyan)
                             ) {
-                                Text("مشاهده", color = Color.Black, fontWeight = FontWeight.Bold, fontSize = 12.sp)
+                                Text(
+                                    "مشاهده",
+                                    color = Color.Black,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
                             }
                         }
 
                         Spacer(modifier = Modifier.height(14.dp))
 
-                        Text("حالت نمایش:", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
-                        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text(
+                            "حالت نمایش:",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp
+                        )
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
                             listOf(
                                 "SYSTEM" to "خودکار",
                                 "LIGHT" to "روشن",
@@ -289,7 +324,10 @@ fun SettingsScreen(
                 // Typing & Predictions
                 item {
                     PersianCard {
-                        SectionTitle(title = "تایپ هوشمند و پیش‌بینی متن", icon = Icons.Default.Psychology)
+                        SectionTitle(
+                            title = "تایپ هوشمند و پیش‌بینی متن",
+                            icon = Icons.Default.Psychology
+                        )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
@@ -322,7 +360,7 @@ fun SettingsScreen(
 
                         SettingToggleRow(
                             title = "نمایش نیم‌فاصله در کیبورد",
-                            subtitle = "نمایش دکمه اختصاصی نیم‌فاصله برای تایپ صحیح کلمات فارسی",
+                            subtitle = "نگه‌داشتن Space برای درج نیم‌فاصله در حالت فارسی",
                             checked = halfSpaceEnabled,
                             onCheckedChange = { scope.launch { preferences.setHalfSpaceEnabled(it) } }
                         )
@@ -332,7 +370,10 @@ fun SettingsScreen(
                 // Sound & Vibration
                 item {
                     PersianCard {
-                        SectionTitle(title = "صدا و لرزش هنگام تایپ", icon = Icons.Default.Vibration)
+                        SectionTitle(
+                            title = "صدا و لرزش هنگام تایپ",
+                            icon = Icons.Default.Vibration
+                        )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
@@ -353,7 +394,10 @@ fun SettingsScreen(
                                 value = vibrationStrength.toFloat(),
                                 onValueChange = { scope.launch { preferences.setVibrationStrength(it.toInt()) } },
                                 valueRange = 10f..60f,
-                                colors = SliderDefaults.colors(thumbColor = PrimaryCyan, activeTrackColor = PrimaryCyan)
+                                colors = SliderDefaults.colors(
+                                    thumbColor = PrimaryCyan,
+                                    activeTrackColor = PrimaryCyan
+                                )
                             )
                         }
 
@@ -371,7 +415,10 @@ fun SettingsScreen(
                 // Voice Typing
                 item {
                     PersianCard {
-                        SectionTitle(title = "تایپ صوتی و گفتاری", icon = Icons.Default.TextFields)
+                        SectionTitle(
+                            title = "تایپ صوتی و گفتاری",
+                            icon = Icons.Default.TextFields
+                        )
 
                         Spacer(modifier = Modifier.height(8.dp))
 
@@ -402,17 +449,27 @@ fun SettingsScreen(
                                 preferences.setHalfSpaceEnabled(true)
                                 preferences.setAiEnabled(true)
                                 preferences.setAiButtonVisible(true)
-                                Toast.makeText(context, "تنظیمات به حالت پیش‌فرض بازگردانده شد.", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(
+                                    context,
+                                    "تنظیمات به حالت پیش‌فرض بازگردانده شد.",
+                                    Toast.LENGTH_SHORT
+                                ).show()
                             }
                         },
-                        modifier = Modifier.fillMaxWidth().height(48.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(48.dp),
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = MaterialTheme.colorScheme.surfaceVariant,
                             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     ) {
-                        Text("بازگرداندن تنظیمات به حالت پیش‌فرض", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text(
+                            "بازگرداندن تنظیمات به حالت پیش‌فرض",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
                     }
                 }
             }
@@ -432,9 +489,22 @@ fun SettingToggleRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f).padding(end = 8.dp)) {
-            Text(text = title, fontWeight = FontWeight.Bold, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurface)
-            Text(text = subtitle, fontSize = 11.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(
+            modifier = Modifier
+                .weight(1f)
+                .padding(end = 8.dp)
+        ) {
+            Text(
+                text = title,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Text(
+                text = subtitle,
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
         Switch(
             checked = checked,
@@ -478,8 +548,7 @@ private fun KeyboardLivePreview(
             PreviewRow(
                 labels = listOf("۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹", "۰"),
                 theme = theme,
-                fontSizeScale = fontSizeScale * 0.9f,
-                weight = 1f
+                fontSizeScale = fontSizeScale * 0.9f
             )
 
             // ردیف اول حروف
@@ -505,7 +574,7 @@ private fun KeyboardLivePreview(
 
             // ردیف پایین
             PreviewRow(
-                labels = listOf("۱۲۳", "EN", "😀", "نیم‌فاصله", "فاصله", "،", "↵"),
+                labels = listOf("۱۲۳", "EN", "😀", ".", "فاصله", "،", "↵"),
                 theme = theme,
                 fontSizeScale = fontSizeScale * 0.85f
             )
@@ -514,7 +583,7 @@ private fun KeyboardLivePreview(
 }
 
 @Composable
-private fun PreviewRow(
+private fun ColumnScope.PreviewRow(
     labels: List<String>,
     theme: KeyboardTheme,
     fontSizeScale: Float,
