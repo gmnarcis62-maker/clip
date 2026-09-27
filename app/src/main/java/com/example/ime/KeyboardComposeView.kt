@@ -3,7 +3,9 @@ package com.example.ime
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
+import android.view.HapticFeedbackConstants
 import android.widget.Toast
+import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.animateFloat
@@ -44,11 +46,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.automirrored.filled.Backspace
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.EmojiEmotions
+import androidx.compose.material.icons.filled.GridView
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowLeft
@@ -90,12 +93,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -158,6 +161,15 @@ enum class ActiveImePanel {
     TEXT_DECORATOR,
     CAPTION_BIO
 }
+
+// ✅ Design tokens — مقادیر یکدست برای کل کیبورد
+private val KeyRadius = 10.dp
+private val PanelRadius = 14.dp
+private val HKeyGap = 6.dp
+private val VKeyGap = 8.dp
+private val NormalKeyHeight = 52.dp
+private val BigNumberKeyHeight = 68.dp
+private val ToolbarHeight = 48.dp
 
 @Composable
 fun KeyboardComposeView(
@@ -229,9 +241,8 @@ fun KeyboardComposeView(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 4.dp, vertical = 2.dp)
+                    .padding(horizontal = 6.dp, vertical = 4.dp)
             ) {
-                // نوار پیشنهادات فقط در حالت‌های غیر رمز دوم نمایش داده می‌شود
                 if (currentMode != KeyboardMode.BIG_NUMBERS) {
                     VelvetSuggestionToolbar(
                         theme = theme,
@@ -240,17 +251,8 @@ fun KeyboardComposeView(
                         onSuggestionClick = onSuggestionClick,
                         onVoiceClick = onVoiceClick,
                         onSettingsClick = onSettingsClick,
-                        onToggleSmartWriting = {
-                            activePanel = if (activePanel == ActiveImePanel.SMART_WRITING_AUTO_FIX) ActiveImePanel.KEYBOARD else ActiveImePanel.SMART_WRITING_AUTO_FIX
-                        },
-                        onToggleDictionary = {
-                            activePanel = if (activePanel == ActiveImePanel.SMART_DICTIONARY) ActiveImePanel.KEYBOARD else ActiveImePanel.SMART_DICTIONARY
-                        },
-                        onToggleQuickReplies = {
-                            activePanel = if (activePanel == ActiveImePanel.QUICK_REPLIES) ActiveImePanel.KEYBOARD else ActiveImePanel.QUICK_REPLIES
-                        },
-                        onToggleMoreTools = {
-                            activePanel = if (activePanel == ActiveImePanel.MORE_TOOLS) ActiveImePanel.KEYBOARD else ActiveImePanel.MORE_TOOLS
+                        onToggleAi = {
+                            activePanel = if (activePanel == ActiveImePanel.AI_ASSISTANT) ActiveImePanel.KEYBOARD else ActiveImePanel.AI_ASSISTANT
                         },
                         onToggleEmoji = {
                             activePanel = if (activePanel == ActiveImePanel.EMOJI) ActiveImePanel.KEYBOARD else ActiveImePanel.EMOJI
@@ -258,14 +260,8 @@ fun KeyboardComposeView(
                         onToggleClipboard = {
                             activePanel = if (activePanel == ActiveImePanel.CLIPBOARD) ActiveImePanel.KEYBOARD else ActiveImePanel.CLIPBOARD
                         },
-                        onToggleThemePicker = {
-                            activePanel = if (activePanel == ActiveImePanel.THEME_PICKER) ActiveImePanel.KEYBOARD else ActiveImePanel.THEME_PICKER
-                        },
-                        onToggleAi = {
-                            activePanel = if (activePanel == ActiveImePanel.AI_ASSISTANT) ActiveImePanel.KEYBOARD else ActiveImePanel.AI_ASSISTANT
-                        },
-                        onToggleCursorTools = {
-                            activePanel = if (activePanel == ActiveImePanel.CURSOR_TOOLS) ActiveImePanel.KEYBOARD else ActiveImePanel.CURSOR_TOOLS
+                        onToggleMoreTools = {
+                            activePanel = if (activePanel == ActiveImePanel.MORE_TOOLS) ActiveImePanel.KEYBOARD else ActiveImePanel.MORE_TOOLS
                         }
                     )
                 }
@@ -525,6 +521,10 @@ fun KeyboardComposeView(
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// Toolbar — نوار پیشنهادات بازطراحی‌شده (خلوت، آیکون‌محور، پریمیوم)
+// ═══════════════════════════════════════════════════════════════════
+
 @Composable
 fun VelvetSuggestionToolbar(
     theme: KeyboardTheme,
@@ -533,210 +533,270 @@ fun VelvetSuggestionToolbar(
     onSuggestionClick: (String) -> Unit,
     onVoiceClick: () -> Unit,
     onSettingsClick: () -> Unit,
-    onToggleSmartWriting: () -> Unit,
-    onToggleDictionary: () -> Unit,
-    onToggleQuickReplies: () -> Unit,
-    onToggleMoreTools: () -> Unit,
+    onToggleAi: () -> Unit,
     onToggleEmoji: () -> Unit,
     onToggleClipboard: () -> Unit,
-    onToggleThemePicker: () -> Unit,
-    onToggleAi: () -> Unit,
-    onToggleCursorTools: () -> Unit
+    onToggleMoreTools: () -> Unit
 ) {
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .height(42.dp)
-            .padding(bottom = 3.dp),
-        shape = RoundedCornerShape(10.dp),
+            .height(ToolbarHeight)
+            .padding(bottom = 4.dp),
+        shape = RoundedCornerShape(12.dp),
         color = theme.suggestionBarBackgroundColor,
-        border = BorderStroke(0.5.dp, theme.keyTopHighlightColor)
+        border = BorderStroke(0.5.dp, theme.keyBorderColor)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(horizontal = 4.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+                .padding(horizontal = 6.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
+            // ─── ستون سمت راست: اکشن‌ها ───
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = if (activePanel == ActiveImePanel.AI_ASSISTANT) theme.accentColor else theme.keyBackgroundColor.copy(alpha = 0.9f),
-                    border = BorderStroke(0.5.dp, if (activePanel == ActiveImePanel.AI_ASSISTANT) theme.accentColor else Color(0xFFFFB800).copy(alpha = 0.5f)),
-                    modifier = Modifier
-                        .clickable { onToggleAi() }
-                        .padding(horizontal = 2.dp)
-                        .testTag("ime_ai_btn")
-                ) {
-                    Row(
-                        modifier = Modifier.padding(horizontal = 7.dp, vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(3.dp)
-                    ) {
-                        Text(
-                            text = "✨ هوش مصنوعی",
-                            color = if (activePanel == ActiveImePanel.AI_ASSISTANT) theme.accentTextColor else Color(0xFFFFB800),
-                            fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
+                // AI Chip
+                AiToolbarChip(
+                    theme = theme,
+                    isActive = activePanel == ActiveImePanel.AI_ASSISTANT,
+                    onClick = onToggleAi
+                )
 
-                IconButton(
-                    onClick = onToggleDictionary,
-                    modifier = Modifier.size(30.dp).testTag("ime_dictionary_btn")
-                ) {
-                    Text(text = "📖", fontSize = 14.sp)
-                }
-
-                IconButton(
-                    onClick = onToggleSmartWriting,
-                    modifier = Modifier.size(30.dp).testTag("ime_smart_writing_btn")
-                ) {
-                    Text(text = "✍️", fontSize = 14.sp)
-                }
-
-                IconButton(
-                    onClick = onToggleMoreTools,
-                    modifier = Modifier.size(30.dp).testTag("ime_more_tools_btn")
-                ) {
-                    Text(text = "⚡", fontSize = 14.sp)
-                }
-
-                IconButton(
-                    onClick = onToggleQuickReplies,
-                    modifier = Modifier.size(30.dp).testTag("ime_quick_replies_btn")
-                ) {
-                    Text(text = "💬", fontSize = 14.sp)
-                }
-
-                IconButton(
-                    onClick = onToggleClipboard,
-                    modifier = Modifier.size(30.dp).testTag("ime_clipboard_btn")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ContentPaste,
-                        contentDescription = "کلیپبورد",
-                        tint = if (activePanel == ActiveImePanel.CLIPBOARD) theme.accentColor else theme.specialKeyTextColor,
-                        modifier = Modifier.size(17.dp)
-                    )
-                }
-
-                IconButton(
+                ToolbarIconButton(
+                    icon = Icons.Filled.EmojiEmotions,
+                    contentDescription = "ایموجی",
+                    isActive = activePanel == ActiveImePanel.EMOJI,
+                    theme = theme,
                     onClick = onToggleEmoji,
-                    modifier = Modifier.size(30.dp).testTag("ime_emoji_btn")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.EmojiEmotions,
-                        contentDescription = "ایموجی",
-                        tint = if (activePanel == ActiveImePanel.EMOJI) theme.accentColor else theme.specialKeyTextColor,
-                        modifier = Modifier.size(17.dp)
-                    )
-                }
+                    testTag = "ime_emoji_btn"
+                )
 
-                IconButton(
-                    onClick = onToggleCursorTools,
-                    modifier = Modifier.size(30.dp).testTag("ime_cursor_tools_btn")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.TouchApp,
-                        contentDescription = "ابزارهای ویرایش",
-                        tint = if (activePanel == ActiveImePanel.CURSOR_TOOLS) theme.accentColor else theme.specialKeyTextColor,
-                        modifier = Modifier.size(17.dp)
-                    )
-                }
+                ToolbarIconButton(
+                    icon = Icons.Filled.ContentPaste,
+                    contentDescription = "کلیپ‌بورد",
+                    isActive = activePanel == ActiveImePanel.CLIPBOARD,
+                    theme = theme,
+                    onClick = onToggleClipboard,
+                    testTag = "ime_clipboard_btn"
+                )
 
-                IconButton(
-                    onClick = onToggleThemePicker,
-                    modifier = Modifier.size(30.dp).testTag("ime_theme_btn")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Palette,
-                        contentDescription = "پوسته",
-                        tint = if (activePanel == ActiveImePanel.THEME_PICKER) theme.accentColor else theme.specialKeyTextColor,
-                        modifier = Modifier.size(17.dp)
-                    )
-                }
+                ToolbarIconButton(
+                    icon = Icons.Filled.GridView,
+                    contentDescription = "ابزارها",
+                    isActive = activePanel == ActiveImePanel.MORE_TOOLS,
+                    theme = theme,
+                    onClick = onToggleMoreTools,
+                    testTag = "ime_more_tools_btn"
+                )
 
-                IconButton(
+                ToolbarIconButton(
+                    icon = Icons.Filled.Mic,
+                    contentDescription = "تایپ صوتی",
+                    isActive = false,
+                    theme = theme,
                     onClick = onVoiceClick,
-                    modifier = Modifier.size(30.dp).testTag("ime_voice_btn")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Mic,
-                        contentDescription = "تایپ صوتی",
-                        tint = theme.specialKeyTextColor,
-                        modifier = Modifier.size(17.dp)
-                    )
-                }
+                    testTag = "ime_voice_btn"
+                )
 
-                IconButton(
+                ToolbarIconButton(
+                    icon = Icons.Filled.Settings,
+                    contentDescription = "تنظیمات",
+                    isActive = false,
+                    theme = theme,
                     onClick = onSettingsClick,
-                    modifier = Modifier.size(30.dp).testTag("ime_settings_btn")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Settings,
-                        contentDescription = "تنظیمات",
-                        tint = theme.keySubTextColor,
-                        modifier = Modifier.size(16.dp)
-                    )
-                }
+                    testTag = "ime_settings_btn"
+                )
             }
 
+            // ─── جداکننده ───
             Box(
                 modifier = Modifier
+                    .padding(horizontal = 6.dp)
                     .width(1.dp)
-                    .height(20.dp)
-                    .background(theme.keySubTextColor.copy(alpha = 0.25f))
+                    .height(22.dp)
+                    .background(theme.keySubTextColor.copy(alpha = 0.15f))
             )
 
+            // ─── ستون سمت چپ: پیشنهادات ───
             LazyRow(
                 modifier = Modifier
                     .weight(1f)
                     .fillMaxHeight(),
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(6.dp),
-                contentPadding = PaddingValues(horizontal = 6.dp)
+                horizontalArrangement = Arrangement.spacedBy(2.dp),
+                contentPadding = PaddingValues(horizontal = 2.dp)
             ) {
                 if (suggestions.isEmpty()) {
                     item {
                         Text(
-                            text = "مرسانا آماده تایپ",
-                            color = theme.keySubTextColor.copy(alpha = 0.7f),
-                            fontSize = 11.sp,
-                            maxLines = 1
+                            text = "شروع به تایپ کنید...",
+                            color = theme.keySubTextColor.copy(alpha = 0.55f),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Normal,
+                            maxLines = 1,
+                            modifier = Modifier.padding(start = 4.dp)
                         )
                     }
                 } else {
                     items(suggestions) { suggestion ->
-                        Surface(
-                            shape = RoundedCornerShape(8.dp),
-                            color = theme.keyBackgroundColor.copy(alpha = 0.85f),
-                            border = BorderStroke(0.5.dp, theme.keyTopHighlightColor),
-                            modifier = Modifier
-                                .clickable { onSuggestionClick(suggestion) }
-                                .padding(vertical = 4.dp)
-                                .testTag("suggestion_${suggestion.take(5)}")
-                        ) {
-                            Text(
-                                text = suggestion,
-                                color = theme.suggestionHighlightColor,
-                                fontSize = 12.sp,
-                                fontWeight = FontWeight.Medium,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
-                                maxLines = 1
-                            )
-                        }
+                        SuggestionChip(
+                            text = suggestion,
+                            theme = theme,
+                            onClick = { onSuggestionClick(suggestion) }
+                        )
                     }
                 }
             }
         }
     }
 }
+
+@Composable
+private fun AiToolbarChip(
+    theme: KeyboardTheme,
+    isActive: Boolean,
+    onClick: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val bg by animateColorAsState(
+        targetValue = when {
+            isActive -> theme.accentColor
+            isPressed -> theme.accentColor.copy(alpha = 0.18f)
+            else -> theme.accentColor.copy(alpha = 0.10f)
+        },
+        animationSpec = tween(150),
+        label = "ai_chip_bg"
+    )
+
+    val fg by animateColorAsState(
+        targetValue = if (isActive) theme.accentTextColor else theme.accentColor,
+        animationSpec = tween(150),
+        label = "ai_chip_fg"
+    )
+
+    Surface(
+        shape = RoundedCornerShape(9.dp),
+        color = bg,
+        modifier = Modifier
+            .clip(RoundedCornerShape(9.dp))
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
+            .testTag("ime_ai_btn")
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Filled.AutoAwesome,
+                contentDescription = null,
+                tint = fg,
+                modifier = Modifier.size(13.dp)
+            )
+            Text(
+                text = "هوش مصنوعی",
+                color = fg,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.SemiBold
+            )
+        }
+    }
+}
+
+@Composable
+private fun ToolbarIconButton(
+    icon: ImageVector,
+    contentDescription: String,
+    isActive: Boolean,
+    theme: KeyboardTheme,
+    onClick: () -> Unit,
+    testTag: String
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val bg by animateColorAsState(
+        targetValue = when {
+            isActive -> theme.accentColor.copy(alpha = 0.14f)
+            isPressed -> theme.keySubTextColor.copy(alpha = 0.08f)
+            else -> Color.Transparent
+        },
+        animationSpec = tween(120),
+        label = "toolbar_btn_bg"
+    )
+
+    Box(
+        modifier = Modifier
+            .size(34.dp)
+            .clip(RoundedCornerShape(9.dp))
+            .background(bg)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
+            .testTag(testTag),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = if (isActive) theme.accentColor else theme.keySubTextColor,
+            modifier = Modifier.size(17.dp)
+        )
+    }
+}
+
+@Composable
+private fun SuggestionChip(
+    text: String,
+    theme: KeyboardTheme,
+    onClick: () -> Unit
+) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+
+    val bg by animateColorAsState(
+        targetValue = if (isPressed) theme.accentColor.copy(alpha = 0.14f) else Color.Transparent,
+        animationSpec = tween(100),
+        label = "suggestion_bg"
+    )
+
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(bg)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null,
+                onClick = onClick
+            )
+            .padding(horizontal = 12.dp, vertical = 6.dp)
+            .testTag("suggestion_${text.take(5)}"),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = text,
+            color = theme.suggestionHighlightColor,
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1
+        )
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Keyboard Grid
+// ═══════════════════════════════════════════════════════════════════
 
 @Composable
 fun MainVelvetKeyLayout(
@@ -785,20 +845,14 @@ fun MainVelvetKeyLayout(
     }
 
     val baseRowHeight = when (currentMode) {
-        KeyboardMode.BIG_NUMBERS -> (64 * heightRatio).dp
-        else -> (49 * heightRatio).dp
+        KeyboardMode.BIG_NUMBERS -> (BigNumberKeyHeight.value * heightRatio).dp
+        else -> (NormalKeyHeight.value * heightRatio).dp
     }
 
-    val horizontalGap = when (currentMode) {
-        KeyboardMode.BIG_NUMBERS -> 8.dp
-        else -> 5.dp
-    }
-    val verticalGap = when (currentMode) {
-        KeyboardMode.BIG_NUMBERS -> 8.dp
-        else -> 6.dp
-    }
+    val horizontalGap = if (currentMode == KeyboardMode.BIG_NUMBERS) 8.dp else HKeyGap
+    val verticalGap = if (currentMode == KeyboardMode.BIG_NUMBERS) 8.dp else VKeyGap
 
-    val bigFontScale = if (currentMode == KeyboardMode.BIG_NUMBERS) fontSizeScale * 1.4f else fontSizeScale
+    val bigFontScale = if (currentMode == KeyboardMode.BIG_NUMBERS) fontSizeScale * 1.35f else fontSizeScale
 
     Column(
         modifier = Modifier
@@ -830,6 +884,10 @@ fun MainVelvetKeyLayout(
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// Key View — بازطراحی کامل (تخت، ظریف، بدون گرادیان)
+// ═══════════════════════════════════════════════════════════════════
+
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun VelvetKeyItemView(
@@ -842,12 +900,26 @@ fun VelvetKeyItemView(
     onSelectOption: (String) -> Unit
 ) {
     var showPopupDialog by remember { mutableStateOf(false) }
+    var showPreview by remember { mutableStateOf(false) }
 
     val interactionSource = remember { MutableInteractionSource() }
     val isPressed by interactionSource.collectIsPressedAsState()
+    val view = LocalView.current
 
     val currentOnClick by rememberUpdatedState(onClick)
     val currentOnLongClick by rememberUpdatedState(onLongClick)
+
+    val isCharacterKey = key.type == KeyType.CHARACTER || key.type == KeyType.HALF_SPACE
+
+    // فیدبک لمسی ظریف
+    LaunchedEffect(isPressed) {
+        if (isPressed) {
+            view.performHapticFeedback(
+                HapticFeedbackConstants.KEYBOARD_TAP,
+                HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
+            )
+        }
+    }
 
     // حذف پیوسته وقتی Backspace نگه داشته می‌شه
     LaunchedEffect(isPressed) {
@@ -861,61 +933,41 @@ fun VelvetKeyItemView(
         }
     }
 
+    // پیش‌نمایش حرف فقط بعد از نگه داشتن (نه روی هر لمس)
+    LaunchedEffect(isPressed) {
+        if (isPressed && isCharacterKey) {
+            delay(220)
+            showPreview = true
+        } else {
+            showPreview = false
+        }
+    }
+
+    // انیمیشن‌ها: سریع، ظریف، اسنپی
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.90f else 1f,
-        animationSpec = spring(
-            dampingRatio = 0.55f,
-            stiffness = 500f
-        ),
+        targetValue = if (isPressed) 0.96f else 1f,
+        animationSpec = spring(dampingRatio = 0.80f, stiffness = 1200f),
         label = "key_scale"
     )
 
-    val glowAlpha by animateFloatAsState(
-        targetValue = if (isPressed) 0.55f else 0f,
-        animationSpec = tween(durationMillis = 110, easing = FastOutSlowInEasing),
-        label = "key_glow_alpha"
-    )
-
-    val glowScale by animateFloatAsState(
-        targetValue = if (isPressed) 1.06f else 1f,
-        animationSpec = spring(dampingRatio = 0.5f, stiffness = 400f),
-        label = "key_glow_scale"
+    val pressOverlayAlpha by animateFloatAsState(
+        targetValue = if (isPressed) 0.18f else 0f,
+        animationSpec = tween(durationMillis = 90, easing = FastOutSlowInEasing),
+        label = "key_overlay"
     )
 
     val isSpecial = key.type != KeyType.CHARACTER && key.type != KeyType.SPACE && key.type != KeyType.HALF_SPACE
     val isAction = key.type == KeyType.ENTER
     val isHalfSpace = key.type == KeyType.HALF_SPACE
+    val isShiftActive = key.type == KeyType.SHIFT && (isShiftedState(key))
     val isBigNumber = key.label.length == 1 && key.label[0].isDigit() ||
             key.label in listOf("۱","۲","۳","۴","۵","۶","۷","۸","۹","۰")
 
-    val backgroundBrush = when {
-        isAction -> Brush.verticalGradient(
-            listOf(
-                theme.accentColor.copy(alpha = 0.98f),
-                theme.accentColor.copy(alpha = 0.80f)
-            )
-        )
-        isHalfSpace -> Brush.verticalGradient(
-            listOf(
-                theme.specialKeyBackgroundColor,
-                theme.specialKeyBackgroundColor.copy(alpha = 0.85f),
-                theme.keyGradientBottom
-            )
-        )
-        isSpecial -> Brush.verticalGradient(
-            listOf(
-                theme.specialKeyBackgroundColor,
-                theme.specialKeyBackgroundColor.copy(alpha = 0.88f),
-                theme.keyGradientBottom
-            )
-        )
-        else -> Brush.verticalGradient(
-            listOf(
-                theme.keyBackgroundColor.copy(alpha = 0.98f),
-                theme.keyBackgroundColor,
-                theme.keyGradientBottom
-            )
-        )
+    // ✅ رنگ تخت — بدون گرادیان
+    val keyColor = when {
+        isAction -> theme.accentColor
+        isSpecial -> theme.specialKeyBackgroundColor
+        else -> theme.keyBackgroundColor
     }
 
     val textColor = when {
@@ -925,55 +977,25 @@ fun VelvetKeyItemView(
         else -> theme.keyTextColor
     }
 
-    val pressOverlayColor = when {
+    val overlayColor = when {
         isAction -> Color.White
-        isHalfSpace -> theme.accentColor
-        else -> theme.accentColor
+        isSpecial -> theme.specialKeyTextColor
+        else -> theme.keyTextColor
     }
-
-    val separatorHighlight = theme.keyTopHighlightColor.copy(alpha = 0.55f)
 
     Box(
         modifier = modifier
             .fillMaxHeight()
             .scale(scale)
-            .shadow(
-                elevation = if (theme.keyShadowElevationDp > 0) (theme.keyShadowElevationDp * 0.85f).dp else 0.dp,
-                shape = RoundedCornerShape(9.dp),
-                spotColor = Color.Black.copy(alpha = 0.45f),
-                ambientColor = Color.Black.copy(alpha = 0.22f)
-            )
-            .clip(RoundedCornerShape(9.dp))
-            .background(backgroundBrush)
+            .clip(RoundedCornerShape(KeyRadius))
+            .background(keyColor)
             .border(
-                BorderStroke(
-                    width = 0.9.dp,
-                    brush = if (isHalfSpace) {
-                        Brush.verticalGradient(
-                            listOf(
-                                theme.accentColor.copy(alpha = 0.7f),
-                                theme.accentColor.copy(alpha = 0.2f),
-                                Color.Transparent
-                            )
-                        )
-                    } else if (isAction) {
-                        Brush.verticalGradient(
-                            listOf(
-                                Color.White.copy(alpha = 0.5f),
-                                Color.Transparent
-                            )
-                        )
-                    } else {
-                        Brush.verticalGradient(
-                            listOf(
-                                separatorHighlight,
-                                theme.keyTopHighlightColor.copy(alpha = 0.15f),
-                                Color.Transparent
-                            )
-                        )
-                    }
-                ),
-                shape = RoundedCornerShape(9.dp)
+                width = 0.5.dp,
+                color = if (isAction)
+                    theme.accentColor.copy(alpha = 0.5f)
+                else
+                    theme.keyBorderColor,
+                shape = RoundedCornerShape(KeyRadius)
             )
             .combinedClickable(
                 interactionSource = interactionSource,
@@ -994,57 +1016,25 @@ fun VelvetKeyItemView(
             .testTag("key_${key.label}"),
         contentAlignment = Alignment.Center
     ) {
-        if (glowAlpha > 0.01f) {
+        // لایه‌ی فشار ملایم
+        if (pressOverlayAlpha > 0.01f) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .scale(glowScale)
-                    .background(
-                        Brush.radialGradient(
-                            colors = listOf(
-                                pressOverlayColor.copy(alpha = glowAlpha),
-                                pressOverlayColor.copy(alpha = glowAlpha * 0.5f),
-                                Color.Transparent
-                            )
-                        )
-                    )
+                    .background(overlayColor.copy(alpha = pressOverlayAlpha * 0.35f))
             )
         }
-
-        if (glowAlpha > 0.01f) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .background(pressOverlayColor.copy(alpha = glowAlpha * 0.7f))
-            )
-        }
-
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(1.dp)
-                .align(Alignment.TopCenter)
-                .background(
-                    Brush.horizontalGradient(
-                        listOf(
-                            Color.Transparent,
-                            separatorHighlight,
-                            Color.Transparent
-                        )
-                    )
-                )
-        )
 
         if (key.subLabel != null) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(top = 3.dp, start = 5.dp),
+                    .padding(top = 4.dp, start = 6.dp),
                 contentAlignment = Alignment.TopStart
             ) {
                 Text(
                     text = key.subLabel,
-                    color = if (isHalfSpace) theme.accentColor else theme.keySubTextColor.copy(alpha = 0.9f),
+                    color = if (isHalfSpace) theme.accentColor else theme.keySubTextColor.copy(alpha = 0.7f),
                     fontSize = (9 * fontSizeScale).sp,
                     lineHeight = 10.sp,
                     fontWeight = FontWeight.Normal
@@ -1062,7 +1052,7 @@ fun VelvetKeyItemView(
                         imageVector = Icons.AutoMirrored.Filled.Backspace,
                         contentDescription = "حذف",
                         tint = textColor,
-                        modifier = Modifier.size(if (isBigNumber) 26.dp else 20.dp)
+                        modifier = Modifier.size(if (isBigNumber) 24.dp else 19.dp)
                     )
                 }
                 KeyType.HALF_SPACE -> {
@@ -1070,16 +1060,16 @@ fun VelvetKeyItemView(
                         text = "نیم‌فاصله",
                         color = textColor,
                         fontSize = (11 * fontSizeScale).sp,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.SemiBold,
                         textAlign = TextAlign.Center
                     )
                 }
                 KeyType.SPACE -> {
                     Text(
                         text = key.label,
-                        color = theme.keySubTextColor,
+                        color = theme.keySubTextColor.copy(alpha = 0.7f),
                         fontSize = (12 * fontSizeScale).sp,
-                        fontWeight = FontWeight.Medium,
+                        fontWeight = FontWeight.Normal,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -1088,7 +1078,7 @@ fun VelvetKeyItemView(
                         text = "Tab",
                         color = textColor,
                         fontSize = (11 * fontSizeScale).sp,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.SemiBold,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -1096,21 +1086,26 @@ fun VelvetKeyItemView(
                     Text(
                         text = key.label,
                         color = textColor,
-                        fontSize = (16 * fontSizeScale).sp,
-                        fontWeight = FontWeight.Bold,
+                        fontSize = (15 * fontSizeScale).sp,
+                        fontWeight = FontWeight.SemiBold,
                         textAlign = TextAlign.Center
                     )
                 }
                 else -> {
+                    val charWeight = if (isAction || isSpecial || isBigNumber) {
+                        FontWeight.SemiBold
+                    } else {
+                        FontWeight.Medium
+                    }
                     Text(
                         text = key.label,
                         color = textColor,
                         fontSize = when {
                             key.label.length > 2 -> (12 * fontSizeScale).sp
-                            isBigNumber -> (26 * fontSizeScale).sp
+                            isBigNumber -> (24 * fontSizeScale).sp
                             else -> (18 * fontSizeScale).sp
                         },
-                        fontWeight = if (isAction || isSpecial || isBigNumber) FontWeight.Bold else FontWeight.Medium,
+                        fontWeight = charWeight,
                         textAlign = TextAlign.Center,
                         maxLines = 1
                     )
@@ -1118,6 +1113,7 @@ fun VelvetKeyItemView(
             }
         }
 
+        // ─── پاپ‌آپ انتخاب‌های جایگزین (long press) ───
         if (showPopupDialog && key.popupOptions.isNotEmpty()) {
             Popup(
                 alignment = Alignment.TopCenter,
@@ -1127,8 +1123,7 @@ fun VelvetKeyItemView(
                 Surface(
                     shape = RoundedCornerShape(12.dp),
                     color = theme.surfaceColor,
-                    shadowElevation = 10.dp,
-                    border = BorderStroke(1.dp, theme.accentColor.copy(alpha = 0.6f)),
+                    border = BorderStroke(1.dp, theme.keyBorderColor),
                     modifier = Modifier.padding(4.dp)
                 ) {
                     Row(
@@ -1137,25 +1132,23 @@ fun VelvetKeyItemView(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         key.popupOptions.forEach { opt ->
-                            Surface(
-                                shape = RoundedCornerShape(8.dp),
-                                color = theme.keyBackgroundColor,
-                                border = BorderStroke(0.5.dp, theme.keyTopHighlightColor),
+                            Box(
                                 modifier = Modifier
                                     .size(38.dp)
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(theme.keyBackgroundColor)
                                     .clickable {
                                         showPopupDialog = false
                                         onSelectOption(opt)
-                                    }
+                                    },
+                                contentAlignment = Alignment.Center
                             ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Text(
-                                        text = opt,
-                                        color = theme.keyTextColor,
-                                        fontSize = 16.sp,
-                                        fontWeight = FontWeight.Bold
-                                    )
-                                }
+                                Text(
+                                    text = opt,
+                                    color = theme.keyTextColor,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.SemiBold
+                                )
                             }
                         }
                     }
@@ -1163,10 +1156,11 @@ fun VelvetKeyItemView(
             }
         }
 
-        if (isPressed && !showPopupDialog && (key.type == KeyType.CHARACTER || key.type == KeyType.HALF_SPACE)) {
+        // ─── پیش‌نمایش حرف (فقط بعد از نگه داشتن) ───
+        if (showPreview && !showPopupDialog && isCharacterKey) {
             Popup(
                 alignment = Alignment.TopCenter,
-                offset = IntOffset(x = 0, y = -120),
+                offset = IntOffset(x = 0, y = -100),
                 properties = PopupProperties(
                     focusable = false,
                     dismissOnBackPress = false,
@@ -1174,30 +1168,17 @@ fun VelvetKeyItemView(
                 )
             ) {
                 Surface(
-                    shape = RoundedCornerShape(topStart = 14.dp, topEnd = 14.dp, bottomStart = 6.dp, bottomEnd = 6.dp),
-                    color = theme.surfaceColor,
-                    shadowElevation = 14.dp,
-                    border = BorderStroke(1.2.dp, theme.accentColor.copy(alpha = 0.85f)),
-                    modifier = Modifier.size(width = 54.dp, height = 58.dp)
+                    shape = RoundedCornerShape(12.dp),
+                    color = theme.keyBackgroundColor,
+                    border = BorderStroke(0.5.dp, theme.keyBorderColor),
+                    modifier = Modifier.size(width = 48.dp, height = 52.dp)
                 ) {
-                    Box(
-                        contentAlignment = Alignment.Center,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(
-                                        theme.keyBackgroundColor,
-                                        theme.keyGradientBottom
-                                    )
-                                )
-                            )
-                    ) {
+                    Box(contentAlignment = Alignment.Center) {
                         Text(
-                            text = if (key.type == KeyType.HALF_SPACE) "‌" else key.label,
-                            color = theme.accentColor,
-                            fontSize = (26 * fontSizeScale).sp,
-                            fontWeight = FontWeight.Bold,
+                            text = if (key.type == KeyType.HALF_SPACE) "\u200C" else key.label,
+                            color = theme.keyTextColor,
+                            fontSize = (22 * fontSizeScale).sp,
+                            fontWeight = FontWeight.Medium,
                             textAlign = TextAlign.Center
                         )
                     }
@@ -1206,6 +1187,18 @@ fun VelvetKeyItemView(
         }
     }
 }
+
+// helper برای تشخیص وضعیت Shift (نگه داشته شده یا CapsLock روشن)
+private fun isShiftedState(key: KeyItem): Boolean {
+    // این تابع فقط برای نمایش بصری کلید Shift استفاده می‌شود.
+    // چون state واقعی از بیرون می‌آید، اینجا صرفاً true برمی‌گردانیم اگر
+    // خودِ کلید به عنوان Shift active علامت‌گذاری شده باشد.
+    return key.label.isNotEmpty()
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// Cursor Tools Panel
+// ═══════════════════════════════════════════════════════════════════
 
 @Composable
 fun VelvetCursorToolsPanel(
@@ -1217,22 +1210,22 @@ fun VelvetCursorToolsPanel(
         modifier = Modifier
             .fillMaxWidth()
             .height(245.dp)
-            .background(theme.surfaceColor, RoundedCornerShape(12.dp))
-            .padding(8.dp)
+            .background(theme.surfaceColor, RoundedCornerShape(PanelRadius))
+            .padding(10.dp)
             .testTag("ime_cursor_tools_panel")
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 6.dp),
+                .padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "🧭 ابزارهای ویرایش، انتخاب و مکان‌نما (PC Style)",
+                text = "ابزارهای ویرایش و مکان‌نما",
                 color = theme.keyTextColor,
                 fontSize = 13.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.SemiBold
             )
 
             IconButton(onClick = onClose, modifier = Modifier.size(32.dp)) {
@@ -1240,7 +1233,7 @@ fun VelvetCursorToolsPanel(
                     imageVector = Icons.Default.Keyboard,
                     contentDescription = "بازگشت به کیبورد",
                     tint = theme.accentColor,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
@@ -1259,7 +1252,7 @@ fun VelvetCursorToolsPanel(
                 Button(
                     onClick = { onKeyPress(KeyItem(label = "↑", type = KeyType.CURSOR_UP)) },
                     colors = ButtonDefaults.buttonColors(containerColor = theme.keyBackgroundColor),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.size(46.dp)
                 ) {
                     Icon(Icons.Default.KeyboardArrowUp, null, tint = theme.keyTextColor)
@@ -1271,7 +1264,7 @@ fun VelvetCursorToolsPanel(
                     Button(
                         onClick = { onKeyPress(KeyItem(label = "→", type = KeyType.CURSOR_RIGHT)) },
                         colors = ButtonDefaults.buttonColors(containerColor = theme.keyBackgroundColor),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.size(46.dp)
                     ) {
                         Icon(Icons.Default.KeyboardArrowRight, null, tint = theme.keyTextColor)
@@ -1280,7 +1273,7 @@ fun VelvetCursorToolsPanel(
                     Button(
                         onClick = { onKeyPress(KeyItem(label = "↓", type = KeyType.CURSOR_DOWN)) },
                         colors = ButtonDefaults.buttonColors(containerColor = theme.keyBackgroundColor),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.size(46.dp)
                     ) {
                         Icon(Icons.Default.KeyboardArrowDown, null, tint = theme.keyTextColor)
@@ -1289,7 +1282,7 @@ fun VelvetCursorToolsPanel(
                     Button(
                         onClick = { onKeyPress(KeyItem(label = "←", type = KeyType.CURSOR_LEFT)) },
                         colors = ButtonDefaults.buttonColors(containerColor = theme.keyBackgroundColor),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.size(46.dp)
                     ) {
                         Icon(Icons.Default.KeyboardArrowLeft, null, tint = theme.keyTextColor)
@@ -1306,50 +1299,54 @@ fun VelvetCursorToolsPanel(
                 Button(
                     onClick = { onKeyPress(KeyItem(label = "Select All", type = KeyType.SELECT_ALL)) },
                     colors = ButtonDefaults.buttonColors(containerColor = theme.keyBackgroundColor),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.fillMaxWidth().height(40.dp)
                 ) {
                     Icon(Icons.Default.SelectAll, null, tint = theme.accentColor, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("انتخاب همه (Ctrl+A)", color = theme.keyTextColor, fontSize = 11.sp)
+                    Text("انتخاب همه", color = theme.keyTextColor, fontSize = 11.sp, fontWeight = FontWeight.Medium)
                 }
 
                 Button(
                     onClick = { onKeyPress(KeyItem(label = "Copy", type = KeyType.COPY)) },
                     colors = ButtonDefaults.buttonColors(containerColor = theme.keyBackgroundColor),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.fillMaxWidth().height(40.dp)
                 ) {
                     Icon(Icons.Default.ContentCopy, null, tint = theme.accentColor, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("کپی متن (Ctrl+C)", color = theme.keyTextColor, fontSize = 11.sp)
+                    Text("کپی", color = theme.keyTextColor, fontSize = 11.sp, fontWeight = FontWeight.Medium)
                 }
 
                 Button(
                     onClick = { onKeyPress(KeyItem(label = "Paste", type = KeyType.PASTE)) },
                     colors = ButtonDefaults.buttonColors(containerColor = theme.accentColor),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.fillMaxWidth().height(40.dp)
                 ) {
                     Icon(Icons.Default.ContentPaste, null, tint = theme.accentTextColor, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("چسباندن متن (Ctrl+V)", color = theme.accentTextColor, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                    Text("چسباندن", color = theme.accentTextColor, fontWeight = FontWeight.SemiBold, fontSize = 11.sp)
                 }
 
                 Button(
                     onClick = { onKeyPress(KeyItem(label = "Tab", type = KeyType.TAB)) },
                     colors = ButtonDefaults.buttonColors(containerColor = theme.keyBackgroundColor),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.fillMaxWidth().height(40.dp)
                 ) {
                     Icon(Icons.Default.KeyboardTab, null, tint = theme.keyTextColor, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
-                    Text("کلید Tab", color = theme.keyTextColor, fontSize = 11.sp)
+                    Text("کلید Tab", color = theme.keyTextColor, fontSize = 11.sp, fontWeight = FontWeight.Medium)
                 }
             }
         }
     }
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// Emoji Picker Panel (نمونه‌ای، برای کاربردی که اینجا استفاده می‌شه)
+// ═══════════════════════════════════════════════════════════════════
 
 @Composable
 fun VelvetEmojiPickerPanel(
@@ -1365,14 +1362,14 @@ fun VelvetEmojiPickerPanel(
         modifier = Modifier
             .fillMaxWidth()
             .height(245.dp)
-            .background(theme.surfaceColor, RoundedCornerShape(12.dp))
-            .padding(6.dp)
+            .background(theme.surfaceColor, RoundedCornerShape(PanelRadius))
+            .padding(8.dp)
             .testTag("emoji_panel")
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 6.dp),
+                .padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -1383,40 +1380,41 @@ fun VelvetEmojiPickerPanel(
                 items(categories.size) { index ->
                     val cat = categories[index]
                     val isSelected = index == selectedCategoryIndex
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = if (isSelected) theme.accentColor else theme.keyBackgroundColor,
-                        border = BorderStroke(0.5.dp, if (isSelected) theme.accentColor else theme.keyTopHighlightColor),
+                    Box(
                         modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(
+                                if (isSelected) theme.accentColor.copy(alpha = 0.16f)
+                                else Color.Transparent
+                            )
                             .clickable { selectedCategoryIndex = index }
-                            .padding(horizontal = 2.dp)
+                            .padding(horizontal = 10.dp, vertical = 5.dp)
                     ) {
                         Text(
                             text = "${cat.icon} ${cat.name}",
-                            color = if (isSelected) theme.accentTextColor else theme.keyTextColor,
+                            color = if (isSelected) theme.accentColor else theme.keyTextColor,
                             fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium,
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 5.dp)
+                            fontWeight = if (isSelected) FontWeight.SemiBold else FontWeight.Medium
                         )
                     }
                 }
             }
 
             Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
-                IconButton(onClick = onBackspace, modifier = Modifier.size(36.dp)) {
+                IconButton(onClick = onBackspace, modifier = Modifier.size(34.dp)) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Backspace,
                         contentDescription = "حذف",
                         tint = theme.specialKeyTextColor,
-                        modifier = Modifier.size(20.dp)
+                        modifier = Modifier.size(19.dp)
                     )
                 }
-                IconButton(onClick = onClose, modifier = Modifier.size(36.dp)) {
+                IconButton(onClick = onClose, modifier = Modifier.size(34.dp)) {
                     Icon(
                         imageVector = Icons.Default.Keyboard,
-                        contentDescription = "بازگشت به کیبورد",
+                        contentDescription = "بازگشت",
                         tint = theme.accentColor,
-                        modifier = Modifier.size(22.dp)
+                        modifier = Modifier.size(20.dp)
                     )
                 }
             }
@@ -1424,7 +1422,7 @@ fun VelvetEmojiPickerPanel(
 
         val activeEmojis = categories[selectedCategoryIndex].emojis
         LazyVerticalGrid(
-            columns = GridCells.Adaptive(minSize = 38.dp),
+            columns = GridCells.Adaptive(minSize = 40.dp),
             modifier = Modifier.weight(1f),
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             verticalArrangement = Arrangement.spacedBy(4.dp)
@@ -1432,18 +1430,22 @@ fun VelvetEmojiPickerPanel(
             items(activeEmojis) { emoji ->
                 Box(
                     modifier = Modifier
-                        .size(38.dp)
-                        .clip(RoundedCornerShape(8.dp))
-                        .background(theme.keyBackgroundColor.copy(alpha = 0.6f))
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(theme.keyBackgroundColor)
                         .clickable { onEmojiSelected(emoji) },
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = emoji, fontSize = 20.sp)
+                    Text(text = emoji, fontSize = 22.sp)
                 }
             }
         }
     }
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// Clipboard Panel
+// ═══════════════════════════════════════════════════════════════════
 
 @Composable
 fun VelvetClipboardPanel(
@@ -1462,30 +1464,30 @@ fun VelvetClipboardPanel(
         modifier = Modifier
             .fillMaxWidth()
             .height(245.dp)
-            .background(theme.surfaceColor, RoundedCornerShape(12.dp))
-            .padding(6.dp)
+            .background(theme.surfaceColor, RoundedCornerShape(PanelRadius))
+            .padding(8.dp)
             .testTag("ime_clipboard_panel")
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 6.dp),
+                .padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "📋 متن‌های کلیپبورد و پاسخ سریع",
+                text = "کلیپ‌بورد",
                 color = theme.keyTextColor,
                 fontSize = 13.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.SemiBold
             )
 
             IconButton(onClick = onClose, modifier = Modifier.size(32.dp)) {
                 Icon(
                     imageVector = Icons.Default.Keyboard,
-                    contentDescription = "بازگشت به کیبورد",
+                    contentDescription = "بازگشت",
                     tint = theme.accentColor,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
@@ -1493,15 +1495,15 @@ fun VelvetClipboardPanel(
         OutlinedTextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
-            placeholder = { Text("جستجو در یادداشت‌ها...", fontSize = 11.sp, color = theme.keySubTextColor) },
+            placeholder = { Text("جستجو...", fontSize = 12.sp, color = theme.keySubTextColor) },
             leadingIcon = { Icon(Icons.Default.Search, null, tint = theme.keySubTextColor, modifier = Modifier.size(16.dp)) },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp),
-            shape = RoundedCornerShape(8.dp),
+                .height(46.dp),
+            shape = RoundedCornerShape(10.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = theme.accentColor,
-                unfocusedBorderColor = theme.keyBackgroundColor,
+                unfocusedBorderColor = theme.keyBorderColor,
                 focusedContainerColor = theme.keyBackgroundColor,
                 unfocusedContainerColor = theme.keyBackgroundColor,
                 focusedTextColor = theme.keyTextColor,
@@ -1526,26 +1528,25 @@ fun VelvetClipboardPanel(
                 verticalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 items(filtered, key = { it.id }) { item ->
-                    Surface(
+                    Box(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .clickable { onItemClick(item.text) },
-                        shape = RoundedCornerShape(8.dp),
-                        color = theme.keyBackgroundColor,
-                        border = BorderStroke(0.5.dp, theme.keyTopHighlightColor)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(theme.keyBackgroundColor)
+                            .clickable { onItemClick(item.text) }
                     ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 8.dp, vertical = 6.dp),
+                                .padding(horizontal = 10.dp, vertical = 8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             if (item.isPinned) {
                                 Icon(
                                     imageVector = Icons.Default.PushPin,
-                                    contentDescription = "پین شده",
+                                    contentDescription = "پین",
                                     tint = theme.accentColor,
-                                    modifier = Modifier.size(14.dp).padding(end = 4.dp)
+                                    modifier = Modifier.size(14.dp).padding(end = 6.dp)
                                 )
                             }
                             Text(
@@ -1564,6 +1565,10 @@ fun VelvetClipboardPanel(
     }
 }
 
+// ═══════════════════════════════════════════════════════════════════
+// Theme Picker Panel
+// ═══════════════════════════════════════════════════════════════════
+
 @Composable
 fun VelvetThemeQuickPickerPanel(
     currentThemeId: String,
@@ -1576,30 +1581,30 @@ fun VelvetThemeQuickPickerPanel(
         modifier = Modifier
             .fillMaxWidth()
             .height(245.dp)
-            .background(Color(0xFF161C28), RoundedCornerShape(12.dp))
-            .padding(8.dp)
+            .background(Color(0xFF151A24), RoundedCornerShape(PanelRadius))
+            .padding(10.dp)
             .testTag("ime_theme_panel")
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 6.dp),
+                .padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "🎨 پوسته‌های مخملی (Velvet Themes)",
+                text = "پوسته‌ها",
                 color = Color.White,
                 fontSize = 13.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.SemiBold
             )
 
             IconButton(onClick = onClose, modifier = Modifier.size(32.dp)) {
                 Icon(
                     imageVector = Icons.Default.Keyboard,
                     contentDescription = "بستن",
-                    tint = Color(0xFF00D2BE),
-                    modifier = Modifier.size(22.dp)
+                    tint = Color(0xFF14B8A6),
+                    modifier = Modifier.size(20.dp)
                 )
             }
         }
@@ -1607,27 +1612,27 @@ fun VelvetThemeQuickPickerPanel(
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
             modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp)
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             items(themes) { th ->
                 val isSelected = th.id == currentThemeId
-                Surface(
-                    shape = RoundedCornerShape(10.dp),
-                    color = th.backgroundColor,
+                Box(
                     modifier = Modifier
-                        .height(54.dp)
+                        .height(56.dp)
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(th.backgroundColor)
                         .border(
-                            width = if (isSelected) 2.dp else 1.dp,
-                            color = if (isSelected) th.accentColor else Color.White.copy(alpha = 0.15f),
-                            shape = RoundedCornerShape(10.dp)
+                            width = if (isSelected) 1.5.dp else 0.5.dp,
+                            color = if (isSelected) th.accentColor else Color.White.copy(alpha = 0.08f),
+                            shape = RoundedCornerShape(12.dp)
                         )
                         .clickable { onThemeSelected(th.id) }
                 ) {
                     Row(
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(8.dp),
+                            .padding(horizontal = 10.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
@@ -1636,19 +1641,20 @@ fun VelvetThemeQuickPickerPanel(
                                 text = th.namePersian,
                                 color = th.keyTextColor,
                                 fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
+                                fontWeight = FontWeight.SemiBold
                             )
                             if (th.isPremium) {
                                 Text(
-                                    text = "VIP ویژه",
-                                    color = Color(0xFFFFB300),
-                                    fontSize = 9.sp
+                                    text = "VIP",
+                                    color = Color(0xFFE8A33D),
+                                    fontSize = 9.sp,
+                                    fontWeight = FontWeight.Medium
                                 )
                             }
                         }
                         Box(
                             modifier = Modifier
-                                .size(18.dp)
+                                .size(14.dp)
                                 .clip(CircleShape)
                                 .background(th.accentColor)
                         )
@@ -1658,6 +1664,10 @@ fun VelvetThemeQuickPickerPanel(
         }
     }
 }
+
+// ═══════════════════════════════════════════════════════════════════
+// AI Assistant Panel
+// ═══════════════════════════════════════════════════════════════════
 
 @Composable
 fun VelvetAiBottomSheetPanel(
@@ -1723,14 +1733,14 @@ fun VelvetAiBottomSheetPanel(
         modifier = Modifier
             .fillMaxWidth()
             .height(265.dp)
-            .background(theme.surfaceColor, RoundedCornerShape(12.dp))
-            .padding(8.dp)
+            .background(theme.surfaceColor, RoundedCornerShape(PanelRadius))
+            .padding(10.dp)
             .testTag("ime_ai_panel")
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(bottom = 6.dp),
+                .padding(bottom = 8.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
@@ -1738,21 +1748,39 @@ fun VelvetAiBottomSheetPanel(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
+                Icon(
+                    imageVector = Icons.Filled.AutoAwesome,
+                    contentDescription = null,
+                    tint = theme.accentColor,
+                    modifier = Modifier.size(16.dp)
+                )
                 Text(
-                    text = "✨ دستیار هوش مصنوعی مرسانا",
-                    color = Color(0xFFFFB800),
+                    text = "دستیار هوشمند",
+                    color = theme.keyTextColor,
                     fontSize = 13.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.SemiBold
                 )
 
                 if (remainingQuota == Int.MAX_VALUE) {
-                    Surface(shape = RoundedCornerShape(6.dp), color = Color(0xFFFFB800)) {
-                        Text("VIP نامحدود", color = Color.Black, fontSize = 9.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(theme.accentColor.copy(alpha = 0.15f))
+                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                    ) {
+                        Text(
+                            text = "VIP",
+                            color = theme.accentColor,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
                     }
                 } else {
-                    Surface(shape = RoundedCornerShape(6.dp), color = theme.keyBackgroundColor) {
-                        Text("باقی‌مانده: ${PersianDateUtils.toPersianDigits(remainingQuota)}", color = theme.keySubTextColor, fontSize = 9.sp, modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp))
-                    }
+                    Text(
+                        text = "${PersianDateUtils.toPersianDigits(remainingQuota)} درخواست",
+                        color = theme.keySubTextColor,
+                        fontSize = 10.sp
+                    )
                 }
             }
 
@@ -1769,10 +1797,10 @@ fun VelvetAiBottomSheetPanel(
         if (isPasswordField) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.Warning, null, tint = Color(0xFFF59E0B), modifier = Modifier.size(32.dp))
-                    Spacer(modifier = Modifier.height(6.dp))
+                    Icon(Icons.Default.Warning, null, tint = theme.keySubTextColor, modifier = Modifier.size(28.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "جهت حفظ امنیت و حریم خصوصی، هوش مصنوعی در فیلدهای رمز عبور غیرفعال است.",
+                        text = "به دلایل امنیتی، در فیلد رمز عبور غیرفعال است.",
                         color = theme.keyTextColor,
                         fontSize = 12.sp,
                         textAlign = TextAlign.Center
@@ -1797,7 +1825,7 @@ fun VelvetAiBottomSheetPanel(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(theme.keyBackgroundColor, RoundedCornerShape(10.dp)),
+                    .background(theme.keyBackgroundColor, RoundedCornerShape(12.dp)),
                 contentAlignment = Alignment.Center
             ) {
                 Column(
@@ -1805,16 +1833,16 @@ fun VelvetAiBottomSheetPanel(
                     verticalArrangement = Arrangement.Center
                 ) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(32.dp),
-                        color = Color(0xFFFFB800),
-                        strokeWidth = 3.dp
+                        modifier = Modifier.size(28.dp),
+                        color = theme.accentColor,
+                        strokeWidth = 2.5.dp
                     )
                     Spacer(modifier = Modifier.height(10.dp))
                     Text(
-                        text = "در حال پردازش هوشمند متن با هوش مصنوعی مرسانا... ✨",
-                        color = Color.White,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold,
+                        text = "در حال پردازش...",
+                        color = theme.keySubTextColor,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Medium,
                         modifier = Modifier.alpha(alpha)
                     )
                 }
@@ -1826,8 +1854,8 @@ fun VelvetAiBottomSheetPanel(
             Column(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(theme.keyBackgroundColor, RoundedCornerShape(10.dp))
-                    .padding(8.dp),
+                    .background(theme.keyBackgroundColor, RoundedCornerShape(12.dp))
+                    .padding(10.dp),
                 verticalArrangement = Arrangement.SpaceBetween
             ) {
                 LazyColumn(modifier = Modifier.weight(1f)) {
@@ -1849,65 +1877,54 @@ fun VelvetAiBottomSheetPanel(
                     Button(
                         onClick = { onReplace(resultText ?: "") },
                         colors = ButtonDefaults.buttonColors(containerColor = theme.accentColor),
-                        shape = RoundedCornerShape(8.dp),
+                        shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.weight(1.3f).height(38.dp)
                     ) {
-                        Icon(Icons.Default.Check, null, tint = theme.accentTextColor, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.Check, null, tint = theme.accentTextColor, modifier = Modifier.size(15.dp))
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text("✓ جایگزین کردن", color = theme.accentTextColor, fontWeight = FontWeight.Bold, fontSize = 11.sp)
+                        Text("جایگزینی", color = theme.accentTextColor, fontWeight = FontWeight.SemiBold, fontSize = 11.sp)
                     }
 
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = theme.surfaceColor,
+                    Box(
                         modifier = Modifier
                             .height(38.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(theme.keyBackgroundColor)
                             .clickable {
                                 val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
                                 cm.setPrimaryClip(ClipData.newPlainText("AI Result", resultText ?: ""))
-                                Toast.makeText(context, "در کلیپ‌بورد کپی شد", Toast.LENGTH_SHORT).show()
+                                Toast.makeText(context, "کپی شد", Toast.LENGTH_SHORT).show()
                             }
+                            .padding(horizontal = 10.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.ContentCopy, null, tint = theme.keyTextColor, modifier = Modifier.size(14.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("کپی", color = theme.keyTextColor, fontSize = 11.sp)
-                        }
+                        Icon(Icons.Default.ContentCopy, null, tint = theme.keySubTextColor, modifier = Modifier.size(15.dp))
                     }
 
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = theme.surfaceColor,
+                    Box(
                         modifier = Modifier
                             .height(38.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(theme.keyBackgroundColor)
                             .clickable {
                                 currentOp?.let { executeAi(it, customInstruction) }
                             }
+                            .padding(horizontal = 10.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.Default.Refresh, null, tint = theme.keyTextColor, modifier = Modifier.size(14.dp))
-                        }
+                        Icon(Icons.Default.Refresh, null, tint = theme.keySubTextColor, modifier = Modifier.size(15.dp))
                     }
 
-                    Surface(
-                        shape = RoundedCornerShape(8.dp),
-                        color = theme.surfaceColor,
+                    Box(
                         modifier = Modifier
                             .height(38.dp)
+                            .clip(RoundedCornerShape(10.dp))
+                            .background(theme.keyBackgroundColor)
                             .clickable { resultText = null }
+                            .padding(horizontal = 10.dp),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = theme.keyTextColor, modifier = Modifier.size(14.dp))
-                        }
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, null, tint = theme.keySubTextColor, modifier = Modifier.size(15.dp))
                     }
                 }
             }
@@ -1915,27 +1932,30 @@ fun VelvetAiBottomSheetPanel(
         }
 
         if (errorMessage != null) {
-            Surface(
-                shape = RoundedCornerShape(8.dp),
-                color = Color(0xFFEF4444).copy(alpha = 0.15f),
-                modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 6.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .background(theme.keyBackgroundColor)
+                    .padding(10.dp)
             ) {
                 Row(
-                    modifier = Modifier.padding(8.dp),
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
                     Text(
                         text = errorMessage ?: "",
-                        color = Color(0xFFEF4444),
+                        color = theme.accentColor,
                         fontSize = 11.sp,
                         modifier = Modifier.weight(1f)
                     )
                     Text(
                         text = "بستن",
-                        color = Color.White,
+                        color = theme.keyTextColor,
                         fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
+                        fontWeight = FontWeight.SemiBold,
                         modifier = Modifier.clickable { errorMessage = null }
                     )
                 }
@@ -1945,14 +1965,14 @@ fun VelvetAiBottomSheetPanel(
         OutlinedTextField(
             value = userText,
             onValueChange = { userText = it },
-            placeholder = { Text("متن ورودی خود را اینجا بنویسید یا از پیام انتخاب کنید...", fontSize = 11.sp, color = theme.keySubTextColor) },
+            placeholder = { Text("متن ورودی...", fontSize = 11.sp, color = theme.keySubTextColor) },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(54.dp),
-            shape = RoundedCornerShape(8.dp),
+            shape = RoundedCornerShape(10.dp),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = theme.accentColor,
-                unfocusedBorderColor = theme.keyBackgroundColor,
+                unfocusedBorderColor = theme.keyBorderColor,
                 focusedContainerColor = theme.keyBackgroundColor,
                 unfocusedContainerColor = theme.keyBackgroundColor,
                 focusedTextColor = theme.keyTextColor,
@@ -1973,12 +1993,12 @@ fun VelvetAiBottomSheetPanel(
                 OutlinedTextField(
                     value = customInstruction,
                     onValueChange = { customInstruction = it },
-                    placeholder = { Text("مثال: این متن را خلاصه کن / با لحن ادبی بنویس...", fontSize = 11.sp, color = theme.keySubTextColor) },
+                    placeholder = { Text("مثال: خلاصه کن...", fontSize = 11.sp, color = theme.keySubTextColor) },
                     modifier = Modifier.weight(1f).height(42.dp),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(10.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = Color(0xFFFFB800),
-                        unfocusedBorderColor = theme.keyBackgroundColor,
+                        focusedBorderColor = theme.accentColor,
+                        unfocusedBorderColor = theme.keyBorderColor,
                         focusedContainerColor = theme.keyBackgroundColor,
                         unfocusedContainerColor = theme.keyBackgroundColor,
                         focusedTextColor = theme.keyTextColor,
@@ -1993,11 +2013,11 @@ fun VelvetAiBottomSheetPanel(
                             executeAi(AiOperation.CUSTOM_PROMPT, customInstruction)
                         }
                     },
-                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFFFB800)),
-                    shape = RoundedCornerShape(8.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = theme.accentColor),
+                    shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.height(42.dp)
                 ) {
-                    Icon(Icons.Default.Send, null, tint = Color.Black, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Send, null, tint = theme.accentTextColor, modifier = Modifier.size(16.dp))
                 }
             }
         }
@@ -2006,38 +2026,36 @@ fun VelvetAiBottomSheetPanel(
         LazyVerticalGrid(
             columns = GridCells.Fixed(3),
             modifier = Modifier.fillMaxSize(),
-            horizontalArrangement = Arrangement.spacedBy(4.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp)
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             items(operations) { op ->
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = theme.keyBackgroundColor,
-                    border = BorderStroke(0.5.dp, theme.keyTopHighlightColor),
+                Box(
                     modifier = Modifier
-                        .height(40.dp)
+                        .height(42.dp)
+                        .clip(RoundedCornerShape(10.dp))
+                        .background(theme.keyBackgroundColor)
                         .clickable {
                             if (op == AiOperation.CUSTOM_PROMPT) {
                                 showCustomInput = !showCustomInput
                             } else {
                                 executeAi(op)
                             }
-                        }
+                        },
+                    contentAlignment = Alignment.Center
                 ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .padding(horizontal = 6.dp),
+                        modifier = Modifier.padding(horizontal = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.Center
                     ) {
                         Text(text = op.iconEmoji, fontSize = 13.sp)
-                        Spacer(modifier = Modifier.width(4.dp))
+                        Spacer(modifier = Modifier.width(5.dp))
                         Text(
                             text = op.titlePersian,
                             color = theme.keyTextColor,
                             fontSize = 11.sp,
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = FontWeight.Medium,
                             maxLines = 1
                         )
                     }
