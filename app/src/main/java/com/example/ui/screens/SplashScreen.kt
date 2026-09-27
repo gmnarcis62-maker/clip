@@ -6,7 +6,6 @@ import androidx.compose.animation.core.animateFloat
 import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -23,7 +22,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -38,13 +36,11 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.R
 import com.example.ui.theme.PrimaryCyan
 import com.example.ui.theme.SecondaryGold
 import kotlinx.coroutines.delay
@@ -163,7 +159,7 @@ fun SplashScreen(
 
                 // Subtitle
                 Text(
-                    text = "صفحه‌کلید هوشمند، مدرن و سریع با هوش مصنوعی",
+                    text = "کیبورد هوشمند مرسانا",
                     color = PrimaryCyan,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium,
@@ -206,13 +202,13 @@ fun SplashScreen(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
                 Text(
-                    text = "ردلاین سافت البرز",
+                    text = "مرسانا",
                     color = Color.White.copy(alpha = 0.8f),
                     fontSize = 13.sp,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
-                    text = "نسخه ۱.۰ | مناسب برای مایکت",
+                    text = "نسخه ۱.۰",
                     color = Color.White.copy(alpha = 0.4f),
                     fontSize = 11.sp
                 )

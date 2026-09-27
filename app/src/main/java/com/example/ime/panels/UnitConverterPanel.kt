@@ -31,7 +31,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableDoubleStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -104,7 +103,7 @@ fun UnitConverterPanel(
                 )
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
-                    text = "⚖️ تبدیل سریع واحدها",
+                    text = "🔄 تبدیل واحدها و مقیاس‌ها",
                     color = theme.keyTextColor,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.Bold
@@ -144,15 +143,25 @@ fun UnitConverterPanel(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // Value Input Field
+        // ✅ Value Input Field — height raised to 54dp so text is never clipped
         OutlinedTextField(
             value = inputValueText,
             onValueChange = { inputValueText = it },
-            placeholder = { Text("مقدار ورودی...", fontSize = 11.sp, color = theme.keySubTextColor) },
+            placeholder = {
+                Text(
+                    text = "مقدار را وارد کنید...",
+                    fontSize = 12.sp,
+                    color = theme.keySubTextColor
+                )
+            },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(44.dp),
-            shape = RoundedCornerShape(8.dp),
+                .height(54.dp),
+            shape = RoundedCornerShape(10.dp),
+            textStyle = androidx.compose.ui.text.TextStyle(
+                fontSize = 14.sp,
+                color = theme.keyTextColor
+            ),
             colors = OutlinedTextFieldDefaults.colors(
                 focusedBorderColor = theme.accentColor,
                 unfocusedBorderColor = theme.keyBackgroundColor,
@@ -185,23 +194,28 @@ fun UnitConverterPanel(
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 10.dp, vertical = 6.dp),
+                                .padding(horizontal = 10.dp, vertical = 8.dp),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(
                                 text = result.displayText,
                                 color = theme.keyTextColor,
-                                fontSize = 11.sp,
+                                fontSize = 12.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Button(
                                 onClick = { onInsertText(result.displayText) },
                                 colors = ButtonDefaults.buttonColors(containerColor = theme.accentColor),
                                 shape = RoundedCornerShape(6.dp),
-                                modifier = Modifier.height(28.dp)
+                                modifier = Modifier.height(30.dp)
                             ) {
-                                Text("درج", color = theme.accentTextColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                Text(
+                                    text = "درج",
+                                    color = theme.accentTextColor,
+                                    fontSize = 11.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
                             }
                         }
                     }

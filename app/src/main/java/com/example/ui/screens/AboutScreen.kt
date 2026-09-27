@@ -1,6 +1,5 @@
 package com.example.ui.screens
 
-import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
@@ -18,13 +17,11 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Email
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Keyboard
-import androidx.compose.material.icons.filled.Policy
 import androidx.compose.material.icons.filled.Security
 import androidx.compose.material.icons.filled.Shop
 import androidx.compose.material.icons.filled.Star
@@ -34,7 +31,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -46,16 +42,16 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.ui.components.ClipbordTopBar
 import com.example.ui.components.PersianCard
 import com.example.ui.theme.PrimaryCyan
 import com.example.ui.theme.SecondaryGold
-import com.example.ui.theme.VipGold
 
 object AboutConstants {
     const val MYKET_DEV_PAGE = "https://myket.ir/developer/dev-36089"
@@ -177,7 +173,7 @@ fun AboutScreen(
                         )
 
                         Text(
-                            text = "ساخته‌شده با ❤️ برای کاربران فارسی‌زبان",
+                            text = "کیبورد هوشمند مرسانا",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
                             color = PrimaryCyan
@@ -193,7 +189,7 @@ fun AboutScreen(
                     }
                 }
 
-                // Developer & Management Card
+                // Developer Card — reads from strings.xml
                 item {
                     PersianCard(borderColor = PrimaryCyan.copy(alpha = 0.4f)) {
                         Text(
@@ -202,7 +198,7 @@ fun AboutScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "تیم نرم افزاری ردلاین سافت البرز",
+                            text = stringResource(id = R.string.company_name),
                             fontSize = 16.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
@@ -211,12 +207,12 @@ fun AboutScreen(
                         Spacer(modifier = Modifier.height(10.dp))
 
                         Text(
-                            text = "مدیریت و سرپرست تیم فنی",
+                            text = "مدیریت و سرپرست تیم",
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = "مهندس مهدی رضایی",
+                            text = stringResource(id = R.string.company_manager),
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             color = SecondaryGold
@@ -230,7 +226,6 @@ fun AboutScreen(
                         modifier = Modifier.fillMaxWidth(),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
-                        // Rate on Myket
                         Button(
                             onClick = { openMyketReview() },
                             modifier = Modifier.fillMaxWidth().height(52.dp).testTag("btn_myket_rate"),
@@ -242,7 +237,6 @@ fun AboutScreen(
                             Text("⭐ ثبت نظر و ۵ ستاره در مایکت", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
 
-                        // Other apps
                         Button(
                             onClick = { openDeveloperPage() },
                             modifier = Modifier.fillMaxWidth().height(52.dp).testTag("btn_other_apps"),
@@ -254,7 +248,6 @@ fun AboutScreen(
                             Text("📱 دیگر برنامه‌های ما در مایکت", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
 
-                        // Support email
                         OutlinedButton(
                             onClick = { sendSupportEmail() },
                             modifier = Modifier.fillMaxWidth().height(52.dp).testTag("btn_support_email"),
@@ -265,7 +258,6 @@ fun AboutScreen(
                             Text("✉️ ارتباط با پشتیبانی و ارسال پیام", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                         }
 
-                        // App Guide / Intro
                         OutlinedButton(
                             onClick = onNavigateToIntro,
                             modifier = Modifier.fillMaxWidth().height(48.dp).testTag("btn_app_intro"),
@@ -276,7 +268,6 @@ fun AboutScreen(
                             Text("📄 معرفی و راهنمای کامل مرسانا", fontWeight = FontWeight.Bold, fontSize = 13.sp)
                         }
 
-                        // Privacy Policy
                         OutlinedButton(
                             onClick = onNavigateToPrivacy,
                             modifier = Modifier.fillMaxWidth().height(48.dp).testTag("btn_privacy_policy"),

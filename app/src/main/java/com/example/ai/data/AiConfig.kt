@@ -1,5 +1,7 @@
 package com.example.ai.data
 
+import com.example.BuildConfig
+
 object AiConfig {
     /**
      * Provider: Atria ASI
@@ -8,25 +10,27 @@ object AiConfig {
     const val PROVIDER_NAME = "Atria ASI"
 
     /**
-     * API Key: Provided for Atria ASI API gateway.
-     * Bearer token format: Bearer atr_...
+     * ✅ API Key now comes from BuildConfig which is populated from `.env`
+     *    via the Secrets Gradle Plugin. Never hardcode keys in source.
+     *
+     * Add this line to `.env`:
+     *   ATRIA_API_KEY=atr_xxxxxxxxxxxxxxxxxxxx
      */
-    const val DEFAULT_API_KEY = "atr_ZtEtzGtqJmQkrO-AiemLVy2jHGzPtBoD"
+    val DEFAULT_API_KEY: String
+        get() = BuildConfig.ATRIA_API_KEY
 
     /**
-     * Default Base URL for Atria ASI:
-     * Endpoint: https://api.atria-asi.ai/v1/
+     * Default Base URL for Atria ASI
      */
     const val DEFAULT_BASE_URL = "https://api.atria-asi.ai/v1/"
 
     /**
-     * Official Atria Model:
-     * Exact name: Atria-Dawn-Preview
+     * Official Atria Model
      */
     const val DEFAULT_MODEL = "Atria-Dawn-Preview"
 
     /**
-     * Network Timeouts in Seconds
+     * Network Timeouts (seconds)
      */
     const val CONNECT_TIMEOUT_SECONDS = 30L
     const val READ_TIMEOUT_SECONDS = 60L

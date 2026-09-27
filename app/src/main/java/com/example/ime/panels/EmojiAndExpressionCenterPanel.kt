@@ -10,7 +10,6 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -31,9 +30,6 @@ import androidx.compose.material.icons.automirrored.filled.Backspace
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.ContentCopy
 import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.StarBorder
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -59,11 +55,11 @@ import com.example.themes.KeyboardTheme
 
 enum class ExpressionMainTab(val title: String) {
     EMOJI("ایموجی"),
-    KAOMOJI("شکلک ژاپنی"),
+    KAOMOJI("شکلک‌های متنی"),
     DECORATOR("زیباساز متن"),
-    SEPARATORS("خطوط تزیینی"),
+    SEPARATORS("خط جداکننده"),
     CAPTIONS("کپشن و بیو"),
-    FAVORITES("برگزیده‌ها ⭐")
+    FAVORITES("برگزیده‌ها ★")
 }
 
 @Composable
@@ -81,7 +77,7 @@ fun EmojiAndExpressionCenterPanel(
     var selectedSeparatorCatIndex by remember { mutableIntStateOf(0) }
     var selectedCaptionCatIndex by remember { mutableIntStateOf(0) }
 
-    var decoratorInput by remember { mutableStateOf(if (initialText.isBlank()) "زندگی زیباست" else initialText) }
+    var decoratorInput by remember { mutableStateOf(if (initialText.isBlank()) "متن زیبای من" else initialText) }
     var favoriteList by remember { mutableStateOf(ExpressionCenterData.getFavorites(context)) }
 
     Column(
@@ -103,7 +99,7 @@ fun EmojiAndExpressionCenterPanel(
                 modifier = Modifier.weight(1f),
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
-                items(ExpressionMainTab.values()) { tab ->
+                items(ExpressionMainTab.values().toList()) { tab ->
                     val isSel = tab == selectedMainTab
                     Surface(
                         shape = RoundedCornerShape(6.dp),
@@ -305,8 +301,16 @@ fun EmojiAndExpressionCenterPanel(
                                     .height(38.dp)
                                     .clickable { onInsertText(km) }
                             ) {
-                                Box(contentAlignment = Alignment.Center, modifier = Modifier.padding(horizontal = 4.dp)) {
-                                    Text(text = km, color = theme.keyTextColor, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier.padding(horizontal = 4.dp)
+                                ) {
+                                    Text(
+                                        text = km,
+                                        color = theme.keyTextColor,
+                                        fontSize = 12.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
                                 }
                             }
                         }
@@ -318,11 +322,22 @@ fun EmojiAndExpressionCenterPanel(
                         TextDecoratorEngine.decorate(decoratorInput)
                     }
                     Column(modifier = Modifier.fillMaxSize()) {
+                        // ✅ Fixed height from 46 → 54
                         OutlinedTextField(
                             value = decoratorInput,
                             onValueChange = { decoratorInput = it },
-                            placeholder = { Text("متن دلخواه را اینجا بنویسید...", fontSize = 11.sp, color = theme.keySubTextColor) },
+                            placeholder = {
+                                Text(
+                                    text = "متن خود را اینجا بنویسید...",
+                                    fontSize = 12.sp,
+                                    color = theme.keySubTextColor
+                                )
+                            },
                             singleLine = true,
+                            textStyle = androidx.compose.ui.text.TextStyle(
+                                fontSize = 13.sp,
+                                color = theme.keyTextColor
+                            ),
                             colors = OutlinedTextFieldDefaults.colors(
                                 focusedTextColor = theme.keyTextColor,
                                 unfocusedTextColor = theme.keyTextColor,
@@ -331,7 +346,7 @@ fun EmojiAndExpressionCenterPanel(
                             ),
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .height(46.dp)
+                                .height(54.dp)
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                         LazyColumn(
@@ -355,8 +370,17 @@ fun EmojiAndExpressionCenterPanel(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Column(modifier = Modifier.weight(1f)) {
-                                            Text(text = item.title, color = theme.accentColor, fontSize = 9.5.sp, fontWeight = FontWeight.Bold)
-                                            Text(text = item.preview, color = theme.keyTextColor, fontSize = 12.sp)
+                                            Text(
+                                                text = item.title,
+                                                color = theme.accentColor,
+                                                fontSize = 9.5.sp,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                            Text(
+                                                text = item.preview,
+                                                color = theme.keyTextColor,
+                                                fontSize = 12.sp
+                                            )
                                         }
                                         Row {
                                             IconButton(
@@ -367,7 +391,12 @@ fun EmojiAndExpressionCenterPanel(
                                                 },
                                                 modifier = Modifier.size(24.dp)
                                             ) {
-                                                Icon(Icons.Default.ContentCopy, contentDescription = null, tint = theme.keySubTextColor, modifier = Modifier.size(13.dp))
+                                                Icon(
+                                                    Icons.Default.ContentCopy,
+                                                    contentDescription = null,
+                                                    tint = theme.keySubTextColor,
+                                                    modifier = Modifier.size(13.dp)
+                                                )
                                             }
                                         }
                                     }
@@ -399,7 +428,12 @@ fun EmojiAndExpressionCenterPanel(
                                     horizontalArrangement = Arrangement.SpaceBetween,
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
-                                    Text(text = sep, color = theme.keyTextColor, fontSize = 12.sp, modifier = Modifier.weight(1f))
+                                    Text(
+                                        text = sep,
+                                        color = theme.keyTextColor,
+                                        fontSize = 12.sp,
+                                        modifier = Modifier.weight(1f)
+                                    )
                                     IconButton(
                                         onClick = {
                                             val cm = context.getSystemService(Context.CLIPBOARD_SERVICE) as? ClipboardManager
@@ -408,7 +442,12 @@ fun EmojiAndExpressionCenterPanel(
                                         },
                                         modifier = Modifier.size(24.dp)
                                     ) {
-                                        Icon(Icons.Default.ContentCopy, contentDescription = null, tint = theme.keySubTextColor, modifier = Modifier.size(13.dp))
+                                        Icon(
+                                            Icons.Default.ContentCopy,
+                                            contentDescription = null,
+                                            tint = theme.keySubTextColor,
+                                            modifier = Modifier.size(13.dp)
+                                        )
                                     }
                                 }
                             }
@@ -433,8 +472,18 @@ fun EmojiAndExpressionCenterPanel(
                                     .clickable { onInsertText(item.content) }
                             ) {
                                 Column(modifier = Modifier.padding(8.dp)) {
-                                    Text(text = item.title, color = theme.accentColor, fontSize = 10.sp, fontWeight = FontWeight.Bold)
-                                    Text(text = item.content, color = theme.keyTextColor, fontSize = 11.5.sp, maxLines = 3)
+                                    Text(
+                                        text = item.title,
+                                        color = theme.accentColor,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Text(
+                                        text = item.content,
+                                        color = theme.keyTextColor,
+                                        fontSize = 11.5.sp,
+                                        maxLines = 3
+                                    )
                                 }
                             }
                         }
@@ -445,7 +494,7 @@ fun EmojiAndExpressionCenterPanel(
                     if (favoriteList.isEmpty()) {
                         Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                             Text(
-                                "هنوز موردی در برگزیده‌ها ذخیره نشده است.\nاز بخش‌های دیگر می‌توانید با ستاره موارد را ذخیره کنید.",
+                                "هنوز آیتمی به برگزیده‌ها اضافه نشده است.\nاز تب‌های دیگر، آیتم‌های دلخواه را ذخیره کنید.",
                                 color = theme.keySubTextColor,
                                 fontSize = 11.sp,
                                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
@@ -472,7 +521,13 @@ fun EmojiAndExpressionCenterPanel(
                                         horizontalArrangement = Arrangement.SpaceBetween,
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
-                                        Text(text = item, color = theme.keyTextColor, fontSize = 12.sp, modifier = Modifier.weight(1f), maxLines = 2)
+                                        Text(
+                                            text = item,
+                                            color = theme.keyTextColor,
+                                            fontSize = 12.sp,
+                                            modifier = Modifier.weight(1f),
+                                            maxLines = 2
+                                        )
                                         IconButton(
                                             onClick = {
                                                 ExpressionCenterData.toggleFavorite(context, item)
@@ -480,7 +535,12 @@ fun EmojiAndExpressionCenterPanel(
                                             },
                                             modifier = Modifier.size(24.dp)
                                         ) {
-                                            Icon(Icons.Default.Star, contentDescription = null, tint = theme.accentColor, modifier = Modifier.size(14.dp))
+                                            Icon(
+                                                Icons.Default.Star,
+                                                contentDescription = null,
+                                                tint = theme.accentColor,
+                                                modifier = Modifier.size(14.dp)
+                                            )
                                         }
                                     }
                                 }

@@ -20,6 +20,19 @@ android {
     versionName = "1.0"
 
     testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+
+    // ✅ خواندن کلیدهای API از فایل .env
+    // پلاگین Secrets مقادیر را به‌صورت project properties در دسترس قرار می‌دهد
+    buildConfigField(
+      "String",
+      "ATRIA_API_KEY",
+      "\"${project.findProperty("ATRIA_API_KEY") ?: ""}\""
+    )
+    buildConfigField(
+      "String",
+      "GEMINI_API_KEY",
+      "\"${project.findProperty("GEMINI_API_KEY") ?: ""}\""
+    )
   }
 
   signingConfigs {

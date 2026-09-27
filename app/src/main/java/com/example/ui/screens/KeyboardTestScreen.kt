@@ -98,7 +98,7 @@ fun KeyboardTestScreen(
                                     modifier = Modifier.size(22.dp)
                                 )
                                 Text(
-                                    text = "در فیلدهای زیر تایپ کنید یا نمونه‌های آماده را لمس کنید تا کیبورد Clipbord را تست نمایید:",
+                                    text = "این متن را در فیلد زیر تایپ کنید یا نمونه‌های آماده را لمس کنید تا کیبورد هوشمند مرسانا را تست نمایید:",
                                     color = MaterialTheme.colorScheme.onBackground,
                                     fontSize = 12.sp,
                                     fontWeight = FontWeight.Medium
@@ -113,30 +113,30 @@ fun KeyboardTestScreen(
                                 horizontalArrangement = Arrangement.spacedBy(6.dp)
                             ) {
                                 Button(
-                                    onClick = { generalText = "من می‌روم و کتاب‌هایم را می‌خوانم." },
+                                    onClick = { generalText = "سلام، من یک کیبورد فارسی هستم که با نیم‌فاصله کار می‌کنم." },
                                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryCyan.copy(alpha = 0.2f)),
                                     shape = RoundedCornerShape(8.dp),
                                     modifier = Modifier.weight(1f).height(32.dp)
                                 ) {
-                                    Text("تست نیم‌فاصله", color = PrimaryCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    Text("جمله فارسی", color = PrimaryCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                                 }
 
                                 Button(
-                                    onClick = { numbersText = "۱۲۵۰۰۰" },
+                                    onClick = { numbersText = "۱۲۳۴۵۶۷۸۹۰" },
                                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryCyan.copy(alpha = 0.2f)),
                                     shape = RoundedCornerShape(8.dp),
                                     modifier = Modifier.weight(1f).height(32.dp)
                                 ) {
-                                    Text("تست عدد فارسی", color = PrimaryCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    Text("اعداد فارسی", color = PrimaryCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                                 }
 
                                 Button(
-                                    onClick = { generalText = "مسئولیت و پشتکار" },
+                                    onClick = { generalText = "انرژی و پشتیبانی" },
                                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryCyan.copy(alpha = 0.2f)),
                                     shape = RoundedCornerShape(8.dp),
                                     modifier = Modifier.weight(1f).height(32.dp)
                                 ) {
-                                    Text("تست دیکشنری", color = PrimaryCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+                                    Text("نیم‌فاصله‌دار", color = PrimaryCyan, fontSize = 10.sp, fontWeight = FontWeight.Bold)
                                 }
                             }
                         }
@@ -146,16 +146,16 @@ fun KeyboardTestScreen(
                 // 1. General Persian Text
                 item {
                     PersianCard {
-                        SectionTitle(title = "۱. تایپ متنی فارسی و انگلیسی", icon = Icons.Default.Keyboard)
+                        SectionTitle(title = "۱. تایپ متن فارسی و نیم‌فاصله‌ها", icon = Icons.Default.Keyboard)
                         Spacer(modifier = Modifier.height(6.dp))
                         OutlinedTextField(
                             value = generalText,
                             onValueChange = { generalText = it },
-                            placeholder = { Text("مثال: سلام، حالتون چطوره؟ می‌خوام سفارش بدم...", fontSize = 13.sp) },
+                            placeholder = { Text("مثال: می‌خواهم نیم‌فاصله‌ها را تست کنم و متن‌ها را وارد نمایم...", fontSize = 13.sp) },
                             trailingIcon = {
                                 if (generalText.isNotEmpty()) {
                                     IconButton(onClick = { generalText = "" }) {
-                                        Icon(Icons.Default.Clear, "پاک کردن")
+                                        Icon(Icons.Default.Clear, "پاک کردن متن")
                                     }
                                 }
                             },
@@ -170,7 +170,7 @@ fun KeyboardTestScreen(
                         if (generalText.isNotEmpty()) {
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
-                                text = "تعداد حروف: ${PersianDateUtils.toPersianDigits(generalText.length)}",
+                                text = "تعداد کاراکتر: ${PersianDateUtils.toPersianDigits(generalText.length)}",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
@@ -181,17 +181,17 @@ fun KeyboardTestScreen(
                 // 2. Numbers and Digits Field
                 item {
                     PersianCard {
-                        SectionTitle(title = "۲. فیلد شماره و اعداد (۰ تا ۹)", icon = Icons.Default.Keyboard)
+                        SectionTitle(title = "۲. تایپ اعداد فارسی و انگلیسی (۰ تا ۹)", icon = Icons.Default.Keyboard)
                         Spacer(modifier = Modifier.height(6.dp))
                         OutlinedTextField(
                             value = numbersText,
                             onValueChange = { numbersText = it },
-                            placeholder = { Text("مثال: ۰۹۱۲۳۴۵۶۷۸۹ یا ۱۲۳۴۵", fontSize = 13.sp) },
+                            placeholder = { Text("مثال: ۰۱۲۳۴۵۶۷۸۹ یا 1234567890", fontSize = 13.sp) },
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                             trailingIcon = {
                                 if (numbersText.isNotEmpty()) {
                                     IconButton(onClick = { numbersText = "" }) {
-                                        Icon(Icons.Default.Clear, "پاک کردن")
+                                        Icon(Icons.Default.Clear, "پاک کردن متن")
                                     }
                                 }
                             },
@@ -206,21 +206,21 @@ fun KeyboardTestScreen(
                     }
                 }
 
-                // 3. Password / Sensitive Field (Auto-correct disabled for security)
+                // 3. Password / Sensitive Field
                 item {
                     PersianCard {
-                        SectionTitle(title = "۳. فیلد رمز عبور (عدم ذخیره در پیش‌بینی)", icon = Icons.Default.Keyboard)
+                        SectionTitle(title = "۳. تایپ رمز عبور (بدون ذخیره‌سازی)", icon = Icons.Default.Keyboard)
                         Spacer(modifier = Modifier.height(6.dp))
                         OutlinedTextField(
                             value = passwordText,
                             onValueChange = { passwordText = it },
-                            placeholder = { Text("رمز عبور را وارد کنید...", fontSize = 13.sp) },
+                            placeholder = { Text("رمز عبور را اینجا وارد کنید...", fontSize = 13.sp) },
                             visualTransformation = PasswordVisualTransformation(),
                             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                             trailingIcon = {
                                 if (passwordText.isNotEmpty()) {
                                     IconButton(onClick = { passwordText = "" }) {
-                                        Icon(Icons.Default.Clear, "پاک کردن")
+                                        Icon(Icons.Default.Clear, "پاک کردن متن")
                                     }
                                 }
                             },
@@ -238,12 +238,12 @@ fun KeyboardTestScreen(
                 // 4. Multi-line Text Area
                 item {
                     PersianCard {
-                        SectionTitle(title = "۴. یادداشت چندخطی و پاراگراف", icon = Icons.Default.Keyboard)
+                        SectionTitle(title = "۴. تایپ متن چندخطی", icon = Icons.Default.Keyboard)
                         Spacer(modifier = Modifier.height(6.dp))
                         OutlinedTextField(
                             value = multiLineText,
                             onValueChange = { multiLineText = it },
-                            placeholder = { Text("متن طولانی خود را تایپ نمایید...", fontSize = 13.sp) },
+                            placeholder = { Text("برای نوشتن چند خط متن اینجا تایپ کنید...", fontSize = 13.sp) },
                             minLines = 3,
                             maxLines = 6,
                             modifier = Modifier.fillMaxWidth().testTag("test_input_multiline"),
@@ -273,7 +273,7 @@ fun KeyboardTestScreen(
                             contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     ) {
-                        Text("پاکسازی تمام فیلدها", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                        Text("پاک کردن تمام فیلدها", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     }
                 }
             }

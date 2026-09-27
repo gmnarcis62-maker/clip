@@ -4,7 +4,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,9 +18,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material.icons.filled.TextFields
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -41,7 +38,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.local.ClipboardEntity
 import com.example.domain.smart.SmartSnippetsAndDictionary
-import com.example.domain.smart.SnippetItem
 import com.example.themes.KeyboardTheme
 
 @Composable
@@ -78,12 +74,29 @@ fun GlobalSearchPanel(
             OutlinedTextField(
                 value = query,
                 onValueChange = { query = it },
-                placeholder = { Text("جستجو در یادداشت‌ها، Snippet و کلیپ‌بورد...", fontSize = 11.sp, color = theme.keySubTextColor) },
-                leadingIcon = { Icon(Icons.Default.Search, null, tint = theme.accentColor, modifier = Modifier.size(16.dp)) },
+                placeholder = {
+                    Text(
+                        text = "جستجو در یادداشت‌ها، Snippet و کلیپ‌بورد...",
+                        fontSize = 12.sp,
+                        color = theme.keySubTextColor
+                    )
+                },
+                leadingIcon = {
+                    Icon(
+                        Icons.Default.Search,
+                        null,
+                        tint = theme.accentColor,
+                        modifier = Modifier.size(18.dp)
+                    )
+                },
                 modifier = Modifier
                     .weight(1f)
-                    .height(44.dp),
-                shape = RoundedCornerShape(8.dp),
+                    .height(54.dp),
+                shape = RoundedCornerShape(10.dp),
+                textStyle = androidx.compose.ui.text.TextStyle(
+                    fontSize = 13.sp,
+                    color = theme.keyTextColor
+                ),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = theme.accentColor,
                     unfocusedBorderColor = theme.keyBackgroundColor,

@@ -4,7 +4,6 @@ import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -19,12 +18,10 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Build
 import androidx.compose.material.icons.filled.Calculate
 import androidx.compose.material.icons.filled.CalendarMonth
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.EmojiEmotions
 import androidx.compose.material.icons.filled.FormatPaint
 import androidx.compose.material.icons.filled.FormatQuote
@@ -33,9 +30,7 @@ import androidx.compose.material.icons.filled.MenuBook
 import androidx.compose.material.icons.filled.Mood
 import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.QuestionAnswer
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Spellcheck
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.filled.SwapHoriz
 import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Tune
@@ -69,7 +64,7 @@ fun MoreToolsHubPanel(
 ) {
     val items = listOf(
         ToolHubItem("استودیو TextArt", "تبدیل عکس به هنر متنی", Icons.Default.Image, ActiveImePanel.TEXT_ART, isSmart = true),
-        ToolHubItem("مرکز ایموجی و اکسپرشن", "۱۵ دسته ایموجی، کاوموجی و خطوط", Icons.Default.EmojiEmotions, ActiveImePanel.EMOJI_CENTER),
+        ToolHubItem("مرکز ایموجی و اکسپرشن", "۱۵ دسته ایموجی، کاووموجی و خطوط", Icons.Default.EmojiEmotions, ActiveImePanel.EMOJI_CENTER),
         ToolHubItem("زیباساز متن و فونت", "فونت انگلیسی و کادرهای فانتزی", Icons.Default.FormatPaint, ActiveImePanel.TEXT_DECORATOR, isSmart = true),
         ToolHubItem("کپشن و بیو ساز", "کپشن اینستاگرام و متن‌های آماده", Icons.Default.FormatQuote, ActiveImePanel.CAPTION_BIO, isSmart = true),
         ToolHubItem("دیکشنری هوشمند", "معنی، مترادف، ترجمه و مثال", Icons.Default.MenuBook, ActiveImePanel.SMART_DICTIONARY, isSmart = true),
@@ -77,7 +72,7 @@ fun MoreToolsHubPanel(
         ToolHubItem("پاسخ‌های سریع", "پیام‌های آماده روزمره", Icons.Default.QuestionAnswer, ActiveImePanel.QUICK_REPLIES, isSmart = true),
         ToolHubItem("تغییر لحن با هوش مصنوعی", "رسمی، صمیمی، کوتاه...", Icons.Default.Tune, ActiveImePanel.SMART_TONE, isSmart = true),
         ToolHubItem("ماشین حساب کیبورد", "محاسبه و درج مستقیم", Icons.Default.Calculate, ActiveImePanel.CALCULATOR),
-        ToolHubItem("تاریخ و ساعت شمسی", "درج تقویم و زمان", Icons.Default.CalendarMonth, ActiveImePanel.DATE_TIME),
+        ToolHubItem("تاریخ و ساعت", "درج تقویم شمسی و میلادی", Icons.Default.CalendarMonth, ActiveImePanel.DATE_TIME),
         ToolHubItem("تبدیل واحدها", "طول، وزن، دما، حجم", Icons.Default.SwapHoriz, ActiveImePanel.UNIT_CONVERTER),
         ToolHubItem("جعبه ابزار متن", "شمارش، معکوس، مرتب‌سازی", Icons.Default.Build, ActiveImePanel.TEXT_TOOLS),
         ToolHubItem("شکلک و نمادها", "Kaomoji و نشانه‌های اسلامی", Icons.Default.Mood, ActiveImePanel.KAOMOJI_SYMBOLS),
@@ -99,7 +94,7 @@ fun MoreToolsHubPanel(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
-                text = "⚡ مرکز ابزارها و دستیار هوشمند Clipbord",
+                text = "⚡ مرکز ابزارها و دستیار هوشمند مرسانا",
                 color = theme.keyTextColor,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold
