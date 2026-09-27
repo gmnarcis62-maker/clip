@@ -59,14 +59,12 @@ import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.KeyboardArrowUp
 import androidx.compose.material.icons.filled.KeyboardTab
 import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material.icons.filled.Palette
 import androidx.compose.material.icons.filled.PushPin
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SelectAll
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.TouchApp
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -186,6 +184,8 @@ fun KeyboardComposeView(
     clipboardItems: List<ClipboardEntity>,
     isPasswordField: Boolean = false,
     currentExtractedText: String = "",
+    // ✅ وقتی این مقدار عوض می‌شود، Composable خودکار برمی‌گردد به صفحه‌ی کیبورد
+    inputSessionKey: Int = 0,
     onKeyPress: (KeyItem) -> Unit,
     onKeyLongPress: (KeyItem) -> Unit = {},
     onSuggestionClick: (String) -> Unit,
@@ -204,6 +204,14 @@ fun KeyboardComposeView(
     LaunchedEffect(activePanel) {
         if (activePanel == ActiveImePanel.SMART_DICTIONARY) {
             dictionarySearchQuery = currentExtractedText
+        }
+    }
+
+    // ✅ هر بار کاربر روی یک فیلد متنی جدید کلیک می‌کند،
+    // خودکار از هر پنلی (دیکشنری، ایموجی، کلیپ‌بورد، AI...) برگرد به کیبورد اصلی
+    LaunchedEffect(inputSessionKey) {
+        if (inputSessionKey > 0) {
+            activePanel = ActiveImePanel.KEYBOARD
         }
     }
 
@@ -553,12 +561,10 @@ fun VelvetSuggestionToolbar(
                 .padding(horizontal = 6.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // ─── ستون سمت راست: اکشن‌ها ───
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(2.dp)
             ) {
-                // AI Chip
                 AiToolbarChip(
                     theme = theme,
                     isActive = activePanel == ActiveImePanel.AI_ASSISTANT,
@@ -611,7 +617,6 @@ fun VelvetSuggestionToolbar(
                 )
             }
 
-            // ─── جداکننده ───
             Box(
                 modifier = Modifier
                     .padding(horizontal = 6.dp)
@@ -620,7 +625,6 @@ fun VelvetSuggestionToolbar(
                     .background(theme.keySubTextColor.copy(alpha = 0.15f))
             )
 
-            // ─── ستون سمت چپ: پیشنهادات ───
             LazyRow(
                 modifier = Modifier
                     .weight(1f)
@@ -959,7 +963,6 @@ fun VelvetKeyItemView(
     val isSpecial = key.type != KeyType.CHARACTER && key.type != KeyType.SPACE && key.type != KeyType.HALF_SPACE
     val isAction = key.type == KeyType.ENTER
     val isHalfSpace = key.type == KeyType.HALF_SPACE
-    val isShiftActive = key.type == KeyType.SHIFT && (isShiftedState(key))
     val isBigNumber = key.label.length == 1 && key.label[0].isDigit() ||
             key.label in listOf("۱","۲","۳","۴","۵","۶","۷","۸","۹","۰")
 
@@ -1016,7 +1019,6 @@ fun VelvetKeyItemView(
             .testTag("key_${key.label}"),
         contentAlignment = Alignment.Center
     ) {
-        // لایه‌ی فشار ملایم
         if (pressOverlayAlpha > 0.01f) {
             Box(
                 modifier = Modifier
@@ -1188,14 +1190,6 @@ fun VelvetKeyItemView(
     }
 }
 
-// helper برای تشخیص وضعیت Shift (نگه داشته شده یا CapsLock روشن)
-private fun isShiftedState(key: KeyItem): Boolean {
-    // این تابع فقط برای نمایش بصری کلید Shift استفاده می‌شود.
-    // چون state واقعی از بیرون می‌آید، اینجا صرفاً true برمی‌گردانیم اگر
-    // خودِ کلید به عنوان Shift active علامت‌گذاری شده باشد.
-    return key.label.isNotEmpty()
-}
-
 // ═══════════════════════════════════════════════════════════════════
 // Cursor Tools Panel
 // ═══════════════════════════════════════════════════════════════════
@@ -1230,7 +1224,7 @@ fun VelvetCursorToolsPanel(
 
             IconButton(onClick = onClose, modifier = Modifier.size(32.dp)) {
                 Icon(
-                    imageVector = Icons.Default.Keyboard,
+                    imageVector = Icons.Filled.Keyboard,
                     contentDescription = "بازگشت به کیبورد",
                     tint = theme.accentColor,
                     modifier = Modifier.size(20.dp)
@@ -1255,7 +1249,7 @@ fun VelvetCursorToolsPanel(
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.size(46.dp)
                 ) {
-                    Icon(Icons.Default.KeyboardArrowUp, null, tint = theme.keyTextColor)
+                    Icon(Icons.Filled.KeyboardArrowUp, null, tint = theme.keyTextColor)
                 }
 
                 Spacer(modifier = Modifier.height(4.dp))
@@ -1267,7 +1261,7 @@ fun VelvetCursorToolsPanel(
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.size(46.dp)
                     ) {
-                        Icon(Icons.Default.KeyboardArrowRight, null, tint = theme.keyTextColor)
+                        Icon(Icons.Filled.KeyboardArrowRight, null, tint = theme.keyTextColor)
                     }
 
                     Button(
@@ -1276,7 +1270,7 @@ fun VelvetCursorToolsPanel(
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.size(46.dp)
                     ) {
-                        Icon(Icons.Default.KeyboardArrowDown, null, tint = theme.keyTextColor)
+                        Icon(Icons.Filled.KeyboardArrowDown, null, tint = theme.keyTextColor)
                     }
 
                     Button(
@@ -1285,7 +1279,7 @@ fun VelvetCursorToolsPanel(
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.size(46.dp)
                     ) {
-                        Icon(Icons.Default.KeyboardArrowLeft, null, tint = theme.keyTextColor)
+                        Icon(Icons.Filled.KeyboardArrowLeft, null, tint = theme.keyTextColor)
                     }
                 }
             }
@@ -1302,7 +1296,7 @@ fun VelvetCursorToolsPanel(
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.fillMaxWidth().height(40.dp)
                 ) {
-                    Icon(Icons.Default.SelectAll, null, tint = theme.accentColor, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Filled.SelectAll, null, tint = theme.accentColor, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
                     Text("انتخاب همه", color = theme.keyTextColor, fontSize = 11.sp, fontWeight = FontWeight.Medium)
                 }
@@ -1313,7 +1307,7 @@ fun VelvetCursorToolsPanel(
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.fillMaxWidth().height(40.dp)
                 ) {
-                    Icon(Icons.Default.ContentCopy, null, tint = theme.accentColor, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Filled.ContentCopy, null, tint = theme.accentColor, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
                     Text("کپی", color = theme.keyTextColor, fontSize = 11.sp, fontWeight = FontWeight.Medium)
                 }
@@ -1324,7 +1318,7 @@ fun VelvetCursorToolsPanel(
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.fillMaxWidth().height(40.dp)
                 ) {
-                    Icon(Icons.Default.ContentPaste, null, tint = theme.accentTextColor, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Filled.ContentPaste, null, tint = theme.accentTextColor, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
                     Text("چسباندن", color = theme.accentTextColor, fontWeight = FontWeight.SemiBold, fontSize = 11.sp)
                 }
@@ -1335,7 +1329,7 @@ fun VelvetCursorToolsPanel(
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.fillMaxWidth().height(40.dp)
                 ) {
-                    Icon(Icons.Default.KeyboardTab, null, tint = theme.keyTextColor, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Filled.KeyboardTab, null, tint = theme.keyTextColor, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(6.dp))
                     Text("کلید Tab", color = theme.keyTextColor, fontSize = 11.sp, fontWeight = FontWeight.Medium)
                 }
@@ -1345,7 +1339,7 @@ fun VelvetCursorToolsPanel(
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Emoji Picker Panel (نمونه‌ای، برای کاربردی که اینجا استفاده می‌شه)
+// Emoji Picker Panel
 // ═══════════════════════════════════════════════════════════════════
 
 @Composable
@@ -1411,7 +1405,7 @@ fun VelvetEmojiPickerPanel(
                 }
                 IconButton(onClick = onClose, modifier = Modifier.size(34.dp)) {
                     Icon(
-                        imageVector = Icons.Default.Keyboard,
+                        imageVector = Icons.Filled.Keyboard,
                         contentDescription = "بازگشت",
                         tint = theme.accentColor,
                         modifier = Modifier.size(20.dp)
@@ -1484,7 +1478,7 @@ fun VelvetClipboardPanel(
 
             IconButton(onClick = onClose, modifier = Modifier.size(32.dp)) {
                 Icon(
-                    imageVector = Icons.Default.Keyboard,
+                    imageVector = Icons.Filled.Keyboard,
                     contentDescription = "بازگشت",
                     tint = theme.accentColor,
                     modifier = Modifier.size(20.dp)
@@ -1496,7 +1490,7 @@ fun VelvetClipboardPanel(
             value = searchQuery,
             onValueChange = { searchQuery = it },
             placeholder = { Text("جستجو...", fontSize = 12.sp, color = theme.keySubTextColor) },
-            leadingIcon = { Icon(Icons.Default.Search, null, tint = theme.keySubTextColor, modifier = Modifier.size(16.dp)) },
+            leadingIcon = { Icon(Icons.Filled.Search, null, tint = theme.keySubTextColor, modifier = Modifier.size(16.dp)) },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(46.dp),
@@ -1543,7 +1537,7 @@ fun VelvetClipboardPanel(
                         ) {
                             if (item.isPinned) {
                                 Icon(
-                                    imageVector = Icons.Default.PushPin,
+                                    imageVector = Icons.Filled.PushPin,
                                     contentDescription = "پین",
                                     tint = theme.accentColor,
                                     modifier = Modifier.size(14.dp).padding(end = 6.dp)
@@ -1601,7 +1595,7 @@ fun VelvetThemeQuickPickerPanel(
 
             IconButton(onClick = onClose, modifier = Modifier.size(32.dp)) {
                 Icon(
-                    imageVector = Icons.Default.Keyboard,
+                    imageVector = Icons.Filled.Keyboard,
                     contentDescription = "بستن",
                     tint = Color(0xFF14B8A6),
                     modifier = Modifier.size(20.dp)
@@ -1786,7 +1780,7 @@ fun VelvetAiBottomSheetPanel(
 
             IconButton(onClick = onClose, modifier = Modifier.size(30.dp)) {
                 Icon(
-                    imageVector = Icons.Default.Keyboard,
+                    imageVector = Icons.Filled.Keyboard,
                     contentDescription = "بستن",
                     tint = theme.accentColor,
                     modifier = Modifier.size(20.dp)
@@ -1797,7 +1791,7 @@ fun VelvetAiBottomSheetPanel(
         if (isPasswordField) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(Icons.Default.Warning, null, tint = theme.keySubTextColor, modifier = Modifier.size(28.dp))
+                    Icon(Icons.Filled.Warning, null, tint = theme.keySubTextColor, modifier = Modifier.size(28.dp))
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "به دلایل امنیتی، در فیلد رمز عبور غیرفعال است.",
@@ -1880,7 +1874,7 @@ fun VelvetAiBottomSheetPanel(
                         shape = RoundedCornerShape(10.dp),
                         modifier = Modifier.weight(1.3f).height(38.dp)
                     ) {
-                        Icon(Icons.Default.Check, null, tint = theme.accentTextColor, modifier = Modifier.size(15.dp))
+                        Icon(Icons.Filled.Check, null, tint = theme.accentTextColor, modifier = Modifier.size(15.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("جایگزینی", color = theme.accentTextColor, fontWeight = FontWeight.SemiBold, fontSize = 11.sp)
                     }
@@ -1898,7 +1892,7 @@ fun VelvetAiBottomSheetPanel(
                             .padding(horizontal = 10.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.ContentCopy, null, tint = theme.keySubTextColor, modifier = Modifier.size(15.dp))
+                        Icon(Icons.Filled.ContentCopy, null, tint = theme.keySubTextColor, modifier = Modifier.size(15.dp))
                     }
 
                     Box(
@@ -1912,7 +1906,7 @@ fun VelvetAiBottomSheetPanel(
                             .padding(horizontal = 10.dp),
                         contentAlignment = Alignment.Center
                     ) {
-                        Icon(Icons.Default.Refresh, null, tint = theme.keySubTextColor, modifier = Modifier.size(15.dp))
+                        Icon(Icons.Filled.Refresh, null, tint = theme.keySubTextColor, modifier = Modifier.size(15.dp))
                     }
 
                     Box(
@@ -2017,7 +2011,7 @@ fun VelvetAiBottomSheetPanel(
                     shape = RoundedCornerShape(10.dp),
                     modifier = Modifier.height(42.dp)
                 ) {
-                    Icon(Icons.Default.Send, null, tint = theme.accentTextColor, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Filled.Send, null, tint = theme.accentTextColor, modifier = Modifier.size(16.dp))
                 }
             }
         }

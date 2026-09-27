@@ -18,6 +18,7 @@ import android.view.inputmethod.InputConnection
 import android.widget.Toast
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.platform.ComposeView
@@ -78,6 +79,10 @@ class ClipbordIME : InputMethodService(), LifecycleOwner, ViewModelStoreOwner, S
     private var isPasswordField by mutableStateOf(false)
     private var isNumericPasswordField by mutableStateOf(false)
     private var extractedTextForAi by mutableStateOf("")
+
+    // ✅ شمارنده‌ی session — هر بار که کاربر روی یک فیلد متنی جدید کلیک می‌کند،
+    // این مقدار زیاد می‌شود و باعث می‌شود KeyboardComposeView به حالت KEYBOARD برگردد.
+    private var inputSessionKey by mutableIntStateOf(0)
 
     private var speechRecognizer: SpeechRecognizer? = null
     private var cachedComposeView: ComposeView? = null
@@ -208,6 +213,8 @@ class ClipbordIME : InputMethodService(), LifecycleOwner, ViewModelStoreOwner, S
                     clipboardItems = clipboardItems,
                     isPasswordField = isPasswordField,
                     currentExtractedText = extractedTextForAi,
+                    // ✅ جدید: هر بار مقدارش عوض بشه، Composable برمی‌گرده به KEYBOARD
+                    inputSessionKey = inputSessionKey,
                     onKeyPress = { key ->
                         feedback.keyPress(vibrationEnabled, vibrationStrength, soundEnabled)
                         handleKeyAction(key)
@@ -284,6 +291,11 @@ class ClipbordIME : InputMethodService(), LifecycleOwner, ViewModelStoreOwner, S
         ensureWindowDecorViewOwners()
         startAndResumeLifecycle()
 
+        // ✅ سیگنال ریست به Composable: برگرد به حالت KEYBOARD
+        // این خط باعث می‌شود اگر کاربر در حالت دیکشنری/ایموجی/کلیپ‌بورد بود
+        // و روی یک فیلد متنی جدید کلیک کرد، خودکار برگردد به کیبورد.
+        inputSessionKey++
+
         isPasswordField = false
         isNumericPasswordField = false
 
@@ -292,7 +304,6 @@ class ClipbordIME : InputMethodService(), LifecycleOwner, ViewModelStoreOwner, S
             val inputClass = inputType and InputType.TYPE_MASK_CLASS
             val variation = inputType and InputType.TYPE_MASK_VARIATION
 
-            // 1. تشخیص فیلد رمز عبور متنی
             if (
                 variation == InputType.TYPE_TEXT_VARIATION_PASSWORD ||
                 variation == InputType.TYPE_TEXT_VARIATION_VISIBLE_PASSWORD ||
@@ -301,7 +312,6 @@ class ClipbordIME : InputMethodService(), LifecycleOwner, ViewModelStoreOwner, S
                 isPasswordField = true
             }
 
-            // 2. تشخیص فیلد رمز عبور عددی (رمز دوم بانکی، پین‌کد و...)
             if (
                 inputClass == InputType.TYPE_CLASS_NUMBER &&
                 (variation == InputType.TYPE_NUMBER_VARIATION_PASSWORD ||
@@ -314,7 +324,6 @@ class ClipbordIME : InputMethodService(), LifecycleOwner, ViewModelStoreOwner, S
                 isPasswordField = true
             }
 
-            // 3. سوییچ به حالت مناسب
             currentMode = when {
                 isNumericPasswordField -> KeyboardMode.BIG_NUMBERS
                 inputClass == InputType.TYPE_CLASS_NUMBER ||
@@ -326,10 +335,6 @@ class ClipbordIME : InputMethodService(), LifecycleOwner, ViewModelStoreOwner, S
         updateSuggestionsAndExtractedText()
     }
 
-    /**
-     * بررسی می‌کند که آیا این فیلد احتمالاً یک فیلد حساس عددی (رمز دوم، CVV2، پین) است.
-     * با استفاده از HintText و imeOptions.
-     */
     private fun isLikelySecretField(info: EditorInfo): Boolean {
         val hint = info.hintText?.toString()?.lowercase() ?: ""
         val secretKeywords = listOf(
@@ -338,7 +343,6 @@ class ClipbordIME : InputMethodService(), LifecycleOwner, ViewModelStoreOwner, S
         )
         if (secretKeywords.any { hint.contains(it) }) return true
 
-        // رمز دوم بانکی معمولاً NO_SUGGESTIONS یا PASSWORD دارد
         val imeOptions = info.imeOptions
         val noSuggestions = (imeOptions and EditorInfo.IME_FLAG_NO_PERSONALIZED_LEARNING) != 0 ||
                 (imeOptions and EditorInfo.IME_FLAG_NO_FULLSCREEN) != 0
