@@ -47,6 +47,7 @@ import com.example.themes.KeyboardTheme
 @Composable
 fun UnitConverterPanel(
     theme: KeyboardTheme,
+    modifier: Modifier = Modifier.fillMaxWidth().height(250.dp),
     onInsertText: (String) -> Unit,
     onClose: () -> Unit
 ) {
@@ -82,13 +83,10 @@ fun UnitConverterPanel(
     val parsedVal = PersianNumberIntelligence.toEnglishDigits(inputValueText).toDoubleOrNull() ?: 1.0
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(250.dp)
+        modifier = modifier
             .background(theme.surfaceColor, RoundedCornerShape(12.dp))
             .padding(8.dp)
     ) {
-        // Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -117,7 +115,6 @@ fun UnitConverterPanel(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Categories tabs
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
             modifier = Modifier.fillMaxWidth()
@@ -143,7 +140,6 @@ fun UnitConverterPanel(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // ✅ Value Input Field — height raised to 54dp so text is never clipped
         OutlinedTextField(
             value = inputValueText,
             onValueChange = { inputValueText = it },
@@ -175,7 +171,6 @@ fun UnitConverterPanel(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // Conversion results list
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(4.dp)

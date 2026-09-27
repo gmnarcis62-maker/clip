@@ -17,7 +17,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.HelpOutline
 import androidx.compose.material.icons.filled.Keyboard
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -36,7 +35,6 @@ import com.example.domain.ime.KeyboardActivationState
 
 @Composable
 fun CyberTelemetryHeader(
-    onVipClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -104,35 +102,7 @@ fun CyberTelemetryHeader(
                 }
             }
 
-            // High-Tech VIP Badge
-            Surface(
-                shape = RoundedCornerShape(12.dp),
-                color = Color(0xFFFFB800).copy(alpha = 0.12f),
-                border = BorderStroke(0.8.dp, Color(0xFFFFB800).copy(alpha = 0.5f)),
-                modifier = Modifier
-                    .clickable { onVipClick() }
-                    .testTag("btn_top_cyber_vip")
-            ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Star,
-                        contentDescription = null,
-                        tint = Color(0xFFFFB800),
-                        modifier = Modifier.size(13.dp)
-                    )
-                    Spacer(modifier = Modifier.width(4.dp))
-                    Text(
-                        text = "VIP PRO",
-                        color = Color(0xFFFFB800),
-                        fontSize = 10.sp,
-                        fontWeight = FontWeight.Bold,
-                        fontFamily = FontFamily.Monospace
-                    )
-                }
-            }
+            // ✅ VIP Badge حذف شد
         }
 
         // Real-time Telemetry Stats Ribbon
@@ -153,8 +123,8 @@ fun CyberTelemetryHeader(
                 modifier = Modifier.weight(1f)
             )
             TelemetryMetricChip(
-                label = "LATENCY",
-                value = "0.8ms",
+                label = "FEATURES",
+                value = "ALL FREE",
                 color = Color(0xFFFFB800),
                 modifier = Modifier.weight(1f)
             )
@@ -230,7 +200,6 @@ fun CyberTelemetryFooter(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.weight(1f)
             ) {
-                // Pulsing Status Beacon
                 Box(
                     modifier = Modifier
                         .size(10.dp)

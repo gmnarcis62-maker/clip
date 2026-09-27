@@ -31,6 +31,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
@@ -42,12 +43,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.example.R
 import com.example.ui.components.ClipbordTopBar
 import com.example.ui.components.PersianCard
 import com.example.ui.theme.PrimaryCyan
@@ -77,14 +77,16 @@ fun AboutScreen(
             if (intent.resolveActivity(context.packageManager) != null) {
                 context.startActivity(intent)
             } else {
-                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(AboutConstants.MYKET_APP_FALLBACK))
-                context.startActivity(browserIntent)
+                context.startActivity(
+                    Intent(Intent.ACTION_VIEW, Uri.parse(AboutConstants.MYKET_APP_FALLBACK))
+                )
             }
         } catch (_: Exception) {
             try {
-                val browserIntent = Intent(Intent.ACTION_VIEW, Uri.parse(AboutConstants.MYKET_APP_FALLBACK))
-                context.startActivity(browserIntent)
-            } catch (e: Exception) {
+                context.startActivity(
+                    Intent(Intent.ACTION_VIEW, Uri.parse(AboutConstants.MYKET_APP_FALLBACK))
+                )
+            } catch (_: Exception) {
                 Toast.makeText(context, "امکان باز کردن صفحه مایکت وجود ندارد.", Toast.LENGTH_SHORT).show()
             }
         }
@@ -92,8 +94,9 @@ fun AboutScreen(
 
     fun openDeveloperPage() {
         try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(AboutConstants.MYKET_DEV_PAGE))
-            context.startActivity(intent)
+            context.startActivity(
+                Intent(Intent.ACTION_VIEW, Uri.parse(AboutConstants.MYKET_DEV_PAGE))
+            )
         } catch (e: Exception) {
             Toast.makeText(context, "خطا در باز کردن مرورگر: ${e.localizedMessage}", Toast.LENGTH_SHORT).show()
         }
@@ -132,7 +135,7 @@ fun AboutScreen(
                 verticalArrangement = Arrangement.spacedBy(16.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Header Branding
+                // Header
                 item {
                     Column(
                         modifier = Modifier
@@ -142,8 +145,8 @@ fun AboutScreen(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(72.dp)
-                                .clip(RoundedCornerShape(20.dp))
+                                .size(80.dp)
+                                .clip(RoundedCornerShape(22.dp))
                                 .background(
                                     Brush.linearGradient(
                                         colors = listOf(
@@ -152,34 +155,34 @@ fun AboutScreen(
                                         )
                                     )
                                 )
-                                .border(2.dp, PrimaryCyan, RoundedCornerShape(20.dp)),
+                                .border(2.dp, PrimaryCyan, RoundedCornerShape(22.dp)),
                             contentAlignment = Alignment.Center
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Keyboard,
                                 contentDescription = "مرسانا",
                                 tint = PrimaryCyan,
-                                modifier = Modifier.size(38.dp)
+                                modifier = Modifier.size(42.dp)
                             )
                         }
 
-                        Spacer(modifier = Modifier.height(12.dp))
+                        Spacer(modifier = Modifier.height(14.dp))
 
                         Text(
-                            text = "مرسانا | Mersana",
-                            fontSize = 22.sp,
-                            fontWeight = FontWeight.Bold,
+                            text = "مرسانا",
+                            fontSize = 26.sp,
+                            fontWeight = FontWeight.ExtraBold,
                             color = MaterialTheme.colorScheme.onBackground
                         )
 
                         Text(
-                            text = "کیبورد هوشمند مرسانا",
+                            text = "کیبورد هوشمند فارسی",
                             fontSize = 13.sp,
                             fontWeight = FontWeight.Medium,
                             color = PrimaryCyan
                         )
 
-                        Spacer(modifier = Modifier.height(4.dp))
+                        Spacer(modifier = Modifier.height(6.dp))
 
                         Text(
                             text = "نسخه ۱.۰ | شماره ساخت: ۱۰۰",
@@ -189,22 +192,47 @@ fun AboutScreen(
                     }
                 }
 
-                // Developer Card — reads from strings.xml
+                // App Description Card — با فونت خوانا و متن دوستانه
                 item {
                     PersianCard(borderColor = PrimaryCyan.copy(alpha = 0.4f)) {
+                        Text(
+                            text = "درباره‌ی مرسانا",
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = PrimaryCyan
+                        )
+
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        Text(
+                            text = "مرسانا یک کیبورد هوشمند فارسی است که برای راحتی، سرعت و لذت تایپ روزمره‌ی شما طراحی شده. " +
+                                    "با ترکیب هوش مصنوعی پیشرفته، دیکشنری فارسی، کلیپ‌بورد نامحدود، ماشین حساب، تبدیل واحد، " +
+                                    "شکلک‌ها، ایموجی و ده‌ها ابزار کاربردی دیگر، تایپ کردن برای شما ساده‌تر، دقیق‌تر و لذت‌بخش‌تر می‌شود.\n\n" +
+                                    "همه‌ی امکانات مرسانا به‌صورت رایگان در اختیار شماست تا بدون هیچ محدودیتی از کیبورد خود لذت ببرید.",
+                            fontSize = 13.5.sp,
+                            lineHeight = 24.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            textAlign = TextAlign.Justify
+                        )
+                    }
+                }
+
+                // Developer Info
+                item {
+                    PersianCard(borderColor = SecondaryGold.copy(alpha = 0.4f)) {
                         Text(
                             text = "توسعه‌دهنده",
                             fontSize = 11.sp,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = stringResource(id = R.string.company_name),
-                            fontSize = 16.sp,
+                            text = "تیم نرم‌افزاری ردلاین سافت البرز",
+                            fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
 
-                        Spacer(modifier = Modifier.height(10.dp))
+                        Spacer(modifier = Modifier.height(12.dp))
 
                         Text(
                             text = "مدیریت و سرپرست تیم",
@@ -212,7 +240,7 @@ fun AboutScreen(
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
-                            text = stringResource(id = R.string.company_manager),
+                            text = "مهندس مهدی رضایی",
                             fontSize = 15.sp,
                             fontWeight = FontWeight.Bold,
                             color = SecondaryGold
@@ -220,7 +248,7 @@ fun AboutScreen(
                     }
                 }
 
-                // Interactive Buttons
+                // Action Buttons
                 item {
                     Column(
                         modifier = Modifier.fillMaxWidth(),
@@ -230,22 +258,36 @@ fun AboutScreen(
                             onClick = { openMyketReview() },
                             modifier = Modifier.fillMaxWidth().height(52.dp).testTag("btn_myket_rate"),
                             shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = SecondaryGold, contentColor = Color(0xFF1E1A11))
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = SecondaryGold,
+                                contentColor = Color(0xFF1E1A11)
+                            )
                         ) {
                             Icon(Icons.Default.Star, null, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("⭐ ثبت نظر و ۵ ستاره در مایکت", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text(
+                                "ثبت نظر و ۵ ستاره در مایکت",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
                         }
 
                         Button(
                             onClick = { openDeveloperPage() },
                             modifier = Modifier.fillMaxWidth().height(52.dp).testTag("btn_other_apps"),
                             shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.buttonColors(containerColor = PrimaryCyan, contentColor = Color(0xFF07211E))
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = PrimaryCyan,
+                                contentColor = Color(0xFF07211E)
+                            )
                         ) {
                             Icon(Icons.Default.Shop, null, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("📱 دیگر برنامه‌های ما در مایکت", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text(
+                                "دیگر برنامه‌های ما در مایکت",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
                         }
 
                         OutlinedButton(
@@ -255,7 +297,11 @@ fun AboutScreen(
                         ) {
                             Icon(Icons.Default.Email, null, modifier = Modifier.size(20.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("✉️ ارتباط با پشتیبانی و ارسال پیام", fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                            Text(
+                                "ارتباط با پشتیبانی",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 14.sp
+                            )
                         }
 
                         OutlinedButton(
@@ -265,7 +311,11 @@ fun AboutScreen(
                         ) {
                             Icon(Icons.Default.Info, null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("📄 معرفی و راهنمای کامل مرسانا", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text(
+                                "معرفی و راهنمای کامل مرسانا",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
                         }
 
                         OutlinedButton(
@@ -275,9 +325,24 @@ fun AboutScreen(
                         ) {
                             Icon(Icons.Default.Security, null, modifier = Modifier.size(18.dp))
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("🔒 حریم خصوصی و امنیت داده‌ها", fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                            Text(
+                                "حریم خصوصی و امنیت داده‌ها",
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp
+                            )
                         }
                     }
+                }
+
+                // Footer
+                item {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "ساخته‌شده با ❤️ در ایران",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
                 }
             }
         }

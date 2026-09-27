@@ -4,13 +4,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.RepeatMode
-import androidx.compose.animation.core.animateFloat
-import androidx.compose.animation.core.infiniteRepeatable
-import androidx.compose.animation.core.rememberInfiniteTransition
-import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -27,17 +20,11 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.ContentCopy
-import androidx.compose.material.icons.filled.Info
-import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -46,8 +33,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.RadioButton
-import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Switch
@@ -55,44 +40,34 @@ import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.ClipbordApp
-import com.example.ai.data.AiConfig
 import com.example.ai.domain.AiOperation
 import com.example.ai.domain.AiResult
-import com.example.domain.shamsi.PersianDateUtils
 import com.example.ui.components.ClipbordTopBar
 import com.example.ui.components.PersianCard
 import com.example.ui.components.SectionTitle
 import com.example.ui.theme.PrimaryCyan
-import com.example.ui.theme.SecondaryGold
-import com.example.ui.theme.VipGold
 import kotlinx.coroutines.launch
 
 @Composable
 fun AiAssistantScreen(
-    onBackClick: () -> Unit,
-    onNavigateToVip: () -> Unit
+    onBackClick: () -> Unit
 ) {
     val context = LocalContext.current
     val app = ClipbordApp.instance
@@ -100,7 +75,6 @@ fun AiAssistantScreen(
     val preferences = app.preferences
     val scope = rememberCoroutineScope()
 
-    val isVip by preferences.isVip.collectAsState(initial = false)
     val aiEnabled by preferences.aiEnabled.collectAsState(initial = true)
     val aiButtonVisible by preferences.aiButtonVisible.collectAsState(initial = true)
 
@@ -111,15 +85,9 @@ fun AiAssistantScreen(
     var isLoading by remember { mutableStateOf(false) }
     var resultText by remember { mutableStateOf<String?>(null) }
     var errorMessage by remember { mutableStateOf<String?>(null) }
-    var remainingQuota by remember { mutableIntStateOf(5) }
 
-    // Direct test state
     var isTestingDirectConnection by remember { mutableStateOf(false) }
     var directTestResult by remember { mutableStateOf<String?>(null) }
-
-    LaunchedEffect(Unit) {
-        remainingQuota = aiRepository.getRemainingDailyUsage()
-    }
 
     fun runAi() {
         if (inputText.isBlank() && selectedOp != AiOperation.CUSTOM_PROMPT) {
@@ -141,13 +109,12 @@ fun AiAssistantScreen(
             when (res) {
                 is AiResult.Success -> {
                     resultText = res.outputText
-                    remainingQuota = if (res.isVip) Int.MAX_VALUE else res.remainingUsage
                 }
                 is AiResult.Error -> {
                     errorMessage = res.messagePersian
                 }
                 is AiResult.LimitReached -> {
-                    errorMessage = "سقف ۵ درخواست رایگان امروز به پایان رسیده است. برای دسترسی نامحدود، نسخه VIP را فعال کنید."
+                    errorMessage = "خطای موقت در سرویس هوش مصنوعی. لطفاً دوباره تلاش کنید."
                 }
             }
         }
@@ -167,7 +134,7 @@ fun AiAssistantScreen(
                     directTestResult = "✗ خطا: ${res.messagePersian}"
                 }
                 is AiResult.LimitReached -> {
-                    directTestResult = "سقف درخواست پر شده است."
+                    directTestResult = "سرویس موقتاً در دسترس نیست."
                 }
             }
         }
@@ -192,9 +159,9 @@ fun AiAssistantScreen(
                     .testTag("ai_assistant_screen"),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                // Usage & Status Header Card
+                // Status Card — همه امکانات فعال
                 item {
-                    PersianCard(borderColor = if (isVip) VipGold else PrimaryCyan) {
+                    PersianCard(borderColor = PrimaryCyan) {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -202,33 +169,24 @@ fun AiAssistantScreen(
                         ) {
                             Column {
                                 Text(
-                                    text = if (isVip) "حساب ویژه VIP فعال است" else "سهمیه درخواست‌های روزانه",
+                                    text = "دستیار هوشمند شما فعال است",
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 15.sp,
-                                    color = if (isVip) VipGold else MaterialTheme.colorScheme.onSurface
+                                    color = PrimaryCyan
                                 )
                                 Spacer(modifier = Modifier.height(2.dp))
                                 Text(
-                                    text = if (isVip) "دسترسی نامحدود به تمامی قابلیت‌های هوش مصنوعی ✓" else "باقی‌مانده امروز: ${PersianDateUtils.toPersianDigits(remainingQuota)} از ${PersianDateUtils.toPersianDigits(AiConfig.FREE_DAILY_REQUEST_LIMIT)} درخواست",
+                                    text = "دسترسی نامحدود به تمام قابلیت‌های هوش مصنوعی ✨",
                                     fontSize = 12.sp,
                                     color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
-
-                            if (!isVip) {
-                                Button(
-                                    onClick = onNavigateToVip,
-                                    colors = ButtonDefaults.buttonColors(containerColor = VipGold),
-                                    shape = RoundedCornerShape(10.dp),
-                                    modifier = Modifier.height(38.dp)
-                                ) {
-                                    Icon(Icons.Default.Star, null, tint = Color.Black, modifier = Modifier.size(16.dp))
-                                    Spacer(modifier = Modifier.width(4.dp))
-                                    Text("ارتقا به VIP", color = Color.Black, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                                }
-                            } else {
-                                Icon(Icons.Default.Star, null, tint = VipGold, modifier = Modifier.size(28.dp))
-                            }
+                            Icon(
+                                Icons.Default.AutoAwesome,
+                                contentDescription = null,
+                                tint = PrimaryCyan,
+                                modifier = Modifier.size(28.dp)
+                            )
                         }
                     }
                 }
@@ -288,7 +246,7 @@ fun AiAssistantScreen(
                     }
                 }
 
-                // Operation Selector Horizontal Chips
+                // Operation selector
                 item {
                     SectionTitle(title = "عملیات هوش مصنوعی", icon = Icons.Default.AutoAwesome)
                     Spacer(modifier = Modifier.height(4.dp))
@@ -326,7 +284,7 @@ fun AiAssistantScreen(
                     }
                 }
 
-                // Input Text Box
+                // Input
                 item {
                     PersianCard {
                         Text(
@@ -397,7 +355,6 @@ fun AiAssistantScreen(
                     }
                 }
 
-                // Error Message
                 if (errorMessage != null) {
                     item {
                         Surface(
@@ -416,7 +373,6 @@ fun AiAssistantScreen(
                     }
                 }
 
-                // AI Result Box
                 if (resultText != null) {
                     item {
                         PersianCard(borderColor = PrimaryCyan) {
@@ -462,7 +418,7 @@ fun AiAssistantScreen(
                     }
                 }
 
-                // AI Configuration & Settings
+                // Settings
                 item {
                     SectionTitle(title = "تنظیمات هوش مصنوعی", icon = Icons.Default.Settings)
 

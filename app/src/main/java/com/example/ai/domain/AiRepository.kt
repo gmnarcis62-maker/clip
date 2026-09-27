@@ -73,15 +73,9 @@ class AiRepositoryImpl(
             .create(AiApiService::class.java)
     }
 
+    // ✅ محدودیت حذف شد — همه‌ی کاربران بی‌نهایت دسترسی دارن
     override suspend fun getRemainingDailyUsage(): Int {
-        val isVip = preferences.isVip.first()
-        if (isVip) return Int.MAX_VALUE
-
-        val todayDate = PersianDateUtils.getCurrentPersianDate()
-        val lastUsageDate = preferences.aiLastUsageDate.first()
-        val currentCount = if (lastUsageDate == todayDate) preferences.aiDailyUsageCount.first() else 0
-
-        return (AiConfig.FREE_DAILY_REQUEST_LIMIT - currentCount).coerceAtLeast(0)
+        return Int.MAX_VALUE
     }
 
     override suspend fun testDirectConnection(samplePrompt: String): AiResult = withContext(Dispatchers.IO) {
@@ -163,15 +157,8 @@ class AiRepositoryImpl(
             return@withContext AiResult.Error("لطفاً ابتدا متنی را بنویسید یا انتخاب کنید.")
         }
 
-        // 1. Check VIP & Daily Limit
-        val isVip = preferences.isVip.first()
-        val todayDate = PersianDateUtils.getCurrentPersianDate()
-        val lastUsageDate = preferences.aiLastUsageDate.first()
-        var currentCount = if (lastUsageDate == todayDate) preferences.aiDailyUsageCount.first() else 0
-
-        if (!isVip && currentCount >= AiConfig.FREE_DAILY_REQUEST_LIMIT) {
-            return@withContext AiResult.LimitReached
-        }
+        // ✅ محدودیت حذف شد — همه‌ی کاربران بی‌نهایت دسترسی دارن
+        val isVip = true
 
         // 2. Fetch configured Endpoint, Model and Key
         val customEndpoint = preferences.customAiEndpoint.first()
@@ -206,18 +193,11 @@ class AiRepositoryImpl(
                 val outputText = choice?.message?.content?.trim()
 
                 if (!outputText.isNullOrBlank()) {
-                    // Update usage stats for non-VIP
-                    if (!isVip) {
-                        currentCount++
-                        preferences.setAiUsage(currentCount, todayDate)
-                    }
-
-                    val remaining = if (isVip) Int.MAX_VALUE else (AiConfig.FREE_DAILY_REQUEST_LIMIT - currentCount).coerceAtLeast(0)
-                    Log.i(TAG, "AI Operation Success. Length: ${outputText.length}, Remaining: $remaining")
+                    Log.i(TAG, "AI Operation Success. Length: ${outputText.length}")
                     return@withContext AiResult.Success(
                         outputText = outputText,
-                        remainingUsage = remaining,
-                        isVip = isVip
+                        remainingUsage = Int.MAX_VALUE,
+                        isVip = true
                     )
                 } else {
                     Log.w(TAG, "AI returned empty response body choice")

@@ -14,15 +14,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.Star
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
@@ -50,20 +47,17 @@ import com.example.ClipbordApp
 import com.example.themes.KeyboardTheme
 import com.example.themes.ThemeManager
 import com.example.ui.components.ClipbordTopBar
-import com.example.ui.theme.VipGold
 import kotlinx.coroutines.launch
 
 @Composable
 fun ThemesScreen(
-    onBackClick: () -> Unit,
-    onNavigateToVip: () -> Unit
+    onBackClick: () -> Unit
 ) {
     val context = LocalContext.current
     val preferences = ClipbordApp.instance.preferences
     val scope = rememberCoroutineScope()
 
     val currentThemeId by preferences.themeId.collectAsState(initial = "turquoise")
-    val isVip by preferences.isVip.collectAsState(initial = false)
     val themes = ThemeManager.ALL_THEMES
 
     CompositionLocalProvider(LocalLayoutDirection provides LayoutDirection.Rtl) {
@@ -71,7 +65,7 @@ fun ThemesScreen(
             topBar = {
                 ClipbordTopBar(
                     title = "پوسته‌ها و قالب‌های کیبورد",
-                    subtitle = "انتخاب از میان ۱۰ تم زیبا و اختصاصی",
+                    subtitle = "همه‌ی ۱۰ پوسته برای شما باز است — رایگان انتخاب کن",
                     onBackClick = onBackClick
                 )
             },
@@ -87,31 +81,19 @@ fun ThemesScreen(
             ) {
                 items(themes, key = { it.id }) { theme ->
                     val isSelected = theme.id == currentThemeId
-                    val isLocked = theme.isPremium && !isVip
 
                     ThemeCard(
                         theme = theme,
                         isSelected = isSelected,
-                        isLocked = isLocked,
                         onSelect = {
-                            if (isLocked) {
+                            scope.launch {
+                                preferences.setThemeId(theme.id)
+                                preferences.setDarkMode(if (theme.isDark) "DARK" else "LIGHT")
                                 Toast.makeText(
                                     context,
-                                    "این پوسته مخصوص نسخه حرفه‌ای VIP است.",
+                                    "پوسته «${theme.namePersian}» فعال شد.",
                                     Toast.LENGTH_SHORT
                                 ).show()
-                                onNavigateToVip()
-                            } else {
-                                scope.launch {
-                                    preferences.setThemeId(theme.id)
-                                    // ✅ Sync the app's light/dark mode with the theme brightness
-                                    preferences.setDarkMode(if (theme.isDark) "DARK" else "LIGHT")
-                                    Toast.makeText(
-                                        context,
-                                        "پوسته «${theme.namePersian}» فعال شد.",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                }
                             }
                         }
                     )
@@ -125,7 +107,6 @@ fun ThemesScreen(
 fun ThemeCard(
     theme: KeyboardTheme,
     isSelected: Boolean,
-    isLocked: Boolean,
     onSelect: () -> Unit
 ) {
     Surface(
@@ -141,7 +122,6 @@ fun ThemeCard(
         )
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            // Header
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -189,30 +169,6 @@ fun ThemeCard(
                             )
                         }
                     }
-                } else if (isLocked) {
-                    Surface(
-                        shape = RoundedCornerShape(12.dp),
-                        color = VipGold
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(4.dp)
-                        ) {
-                            Icon(
-                                Icons.Default.Lock,
-                                null,
-                                tint = Color.Black,
-                                modifier = Modifier.size(14.dp)
-                            )
-                            Text(
-                                "VIP ویژه",
-                                color = Color.Black,
-                                fontSize = 11.sp,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
                 }
             }
 
@@ -225,7 +181,7 @@ fun ThemeCard(
 
             Spacer(modifier = Modifier.height(12.dp))
 
-            // Realistic Complete Persian Keyboard Mockup
+            // Keyboard Mockup
             Surface(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(14.dp),
@@ -239,7 +195,6 @@ fun ThemeCard(
                     modifier = Modifier.padding(6.dp),
                     verticalArrangement = Arrangement.spacedBy(3.dp)
                 ) {
-                    // Mini Toolbar
                     Surface(
                         modifier = Modifier.fillMaxWidth().height(22.dp),
                         shape = RoundedCornerShape(6.dp),
@@ -258,7 +213,6 @@ fun ThemeCard(
                         }
                     }
 
-                    // Mini Suggestion bar
                     Surface(
                         modifier = Modifier.fillMaxWidth().height(22.dp),
                         shape = RoundedCornerShape(6.dp),
@@ -275,7 +229,6 @@ fun ThemeCard(
                         }
                     }
 
-                    // Row 1
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(2.dp)
@@ -285,7 +238,6 @@ fun ThemeCard(
                         }
                     }
 
-                    // Row 2
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(2.dp)
@@ -295,7 +247,6 @@ fun ThemeCard(
                         }
                     }
 
-                    // Row 3
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(2.dp)
@@ -307,7 +258,6 @@ fun ThemeCard(
                         MiniKey(char = "⌫", theme = theme, isSpecial = true, modifier = Modifier.weight(1.3f))
                     }
 
-                    // Row 4
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(2.5.dp)
@@ -334,9 +284,7 @@ fun ThemeCard(
                 )
             ) {
                 Text(
-                    text = if (isSelected) "این پوسته در حال استفاده است"
-                    else if (isLocked) "بازگشایی در نسخه VIP"
-                    else "فعال‌سازی این پوسته",
+                    text = if (isSelected) "این پوسته در حال استفاده است" else "فعال‌سازی این پوسته",
                     fontWeight = FontWeight.Bold,
                     fontSize = 13.sp
                 )

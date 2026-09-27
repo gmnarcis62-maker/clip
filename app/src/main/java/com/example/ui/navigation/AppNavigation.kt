@@ -16,14 +16,20 @@ import androidx.navigation.compose.rememberNavController
 import com.example.ui.screens.AboutScreen
 import com.example.ui.screens.AiAssistantScreen
 import com.example.ui.screens.AppIntroScreen
+import com.example.ui.screens.CalculatorScreen
 import com.example.ui.screens.ClipboardManagerScreen
+import com.example.ui.screens.DateTimeScreen
+import com.example.ui.screens.DictionaryScreen
 import com.example.ui.screens.EmojiExplorerScreen
 import com.example.ui.screens.HomeScreen
+import com.example.ui.screens.KaomojiScreen
 import com.example.ui.screens.KeyboardTestScreen
 import com.example.ui.screens.PrivacyPolicyScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.screens.SplashScreen
+import com.example.ui.screens.TextToolsScreen
 import com.example.ui.screens.ThemesScreen
+import com.example.ui.screens.UnitConverterScreen
 import com.example.ui.screens.VipScreen
 
 object NavRoutes {
@@ -39,6 +45,13 @@ object NavRoutes {
     const val ABOUT = "about"
     const val APP_INTRO = "app_intro"
     const val PRIVACY_POLICY = "privacy_policy"
+    // ✅ مسیرهای جدید برای ابزارهای مستقل
+    const val DICTIONARY = "dictionary"
+    const val CALCULATOR = "calculator"
+    const val UNIT_CONVERTER = "unit_converter"
+    const val TEXT_TOOLS = "text_tools"
+    const val KAOMOJI = "kaomoji"
+    const val DATE_TIME = "date_time"
 }
 
 @Composable
@@ -85,7 +98,14 @@ fun AppNavigation(
                 onNavigateToVip = { navController.navigate(NavRoutes.VIP) },
                 onNavigateToAbout = { navController.navigate(NavRoutes.ABOUT) },
                 onNavigateToIntro = { navController.navigate(NavRoutes.APP_INTRO) },
-                onNavigateToPrivacy = { navController.navigate(NavRoutes.PRIVACY_POLICY) }
+                onNavigateToPrivacy = { navController.navigate(NavRoutes.PRIVACY_POLICY) },
+                // ✅ مسیرهای جدید
+                onNavigateToDictionary = { navController.navigate(NavRoutes.DICTIONARY) },
+                onNavigateToCalculator = { navController.navigate(NavRoutes.CALCULATOR) },
+                onNavigateToUnitConverter = { navController.navigate(NavRoutes.UNIT_CONVERTER) },
+                onNavigateToTextTools = { navController.navigate(NavRoutes.TEXT_TOOLS) },
+                onNavigateToKaomoji = { navController.navigate(NavRoutes.KAOMOJI) },
+                onNavigateToDateTime = { navController.navigate(NavRoutes.DATE_TIME) }
             )
         }
 
@@ -141,6 +161,26 @@ fun AppNavigation(
 
         composable(NavRoutes.PRIVACY_POLICY) {
             PrivacyPolicyScreen(onBackClick = { navController.popBackStack() })
+        }
+
+        // ✅ صفحات ابزارهای مستقل
+        composable(NavRoutes.DICTIONARY) {
+            DictionaryScreen(onBackClick = { navController.popBackStack() })
+        }
+        composable(NavRoutes.CALCULATOR) {
+            CalculatorScreen(onBackClick = { navController.popBackStack() })
+        }
+        composable(NavRoutes.UNIT_CONVERTER) {
+            UnitConverterScreen(onBackClick = { navController.popBackStack() })
+        }
+        composable(NavRoutes.TEXT_TOOLS) {
+            TextToolsScreen(onBackClick = { navController.popBackStack() })
+        }
+        composable(NavRoutes.KAOMOJI) {
+            KaomojiScreen(onBackClick = { navController.popBackStack() })
+        }
+        composable(NavRoutes.DATE_TIME) {
+            DateTimeScreen(onBackClick = { navController.popBackStack() })
         }
     }
 }

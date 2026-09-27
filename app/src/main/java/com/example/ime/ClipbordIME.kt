@@ -80,8 +80,7 @@ class ClipbordIME : InputMethodService(), LifecycleOwner, ViewModelStoreOwner, S
     private var isNumericPasswordField by mutableStateOf(false)
     private var extractedTextForAi by mutableStateOf("")
 
-    // ✅ شمارنده‌ی session — هر بار که کاربر روی یک فیلد متنی جدید کلیک می‌کند،
-    // این مقدار زیاد می‌شود و باعث می‌شود KeyboardComposeView به حالت KEYBOARD برگردد.
+    // ✅ شمارنده‌ی session — هر بار کاربر روی یک فیلد متنی جدید کلیک می‌کند
     private var inputSessionKey by mutableIntStateOf(0)
 
     private var speechRecognizer: SpeechRecognizer? = null
@@ -185,12 +184,15 @@ class ClipbordIME : InputMethodService(), LifecycleOwner, ViewModelStoreOwner, S
             setViewTreeSavedStateRegistryOwner(this@ClipbordIME)
             setViewTreeViewModelStoreOwner(this@ClipbordIME)
 
+            // ✅ فعال‌سازی صدا و ویبره روی ComposeView
+            isHapticFeedbackEnabled = true
+            isSoundEffectsEnabled = true
+
             setContent {
                 val themeId by preferences.themeId.collectAsState(initial = "turquoise")
                 val heightRatio by preferences.keyboardHeightRatio.collectAsState(initial = 1.0f)
                 val fontSizeScale by preferences.fontSizeScale.collectAsState(initial = 1.0f)
                 val vibrationEnabled by preferences.vibrationEnabled.collectAsState(initial = true)
-                val vibrationStrength by preferences.vibrationStrength.collectAsState(initial = 25)
                 val soundEnabled by preferences.soundEnabled.collectAsState(initial = true)
                 val persianNumbersDefault by preferences.persianNumbersEnabled.collectAsState(initial = true)
                 val halfSpaceEnabled by preferences.halfSpaceEnabled.collectAsState(initial = true)
@@ -213,17 +215,31 @@ class ClipbordIME : InputMethodService(), LifecycleOwner, ViewModelStoreOwner, S
                     clipboardItems = clipboardItems,
                     isPasswordField = isPasswordField,
                     currentExtractedText = extractedTextForAi,
-                    // ✅ جدید: هر بار مقدارش عوض بشه، Composable برمی‌گرده به KEYBOARD
                     inputSessionKey = inputSessionKey,
+                    // ✅ صدا و ویبره — از تنظیمات کاربر
+                    hapticEnabled = vibrationEnabled,
+                    soundEnabled = soundEnabled,
                     onKeyPress = { key ->
-                        feedback.keyPress(vibrationEnabled, vibrationStrength, soundEnabled)
+                        // صدا و ویبره حالا داخل VelvetKeyItemView هندل می‌شود
                         handleKeyAction(key)
                     },
                     onKeyLongPress = { key ->
-                        if (key.subLabel != null) {
-                            feedback.keyPress(vibrationEnabled, vibrationStrength, soundEnabled)
-                            currentInputConnection?.commitText(key.subLabel, 1)
-                            updateSuggestionsAndExtractedText()
+                        when {
+                            // ✅ نگه‌داشتن Space = درج نیم‌فاصله
+                            key.type == KeyType.SPACE -> {
+                                currentInputConnection?.commitText("\u200C", 1)
+                                updateSuggestionsAndExtractedText()
+                                Toast.makeText(
+                                    this@ClipbordIME,
+                                    "نیم‌فاصله درج شد",
+                                    Toast.LENGTH_SHORT
+                                ).show()
+                            }
+                            // دیگر کلیدها: اگر subLabel داشتند، آن را درج کن
+                            key.subLabel != null -> {
+                                currentInputConnection?.commitText(key.subLabel, 1)
+                                updateSuggestionsAndExtractedText()
+                            }
                         }
                     },
                     onSuggestionClick = { word ->
@@ -263,6 +279,7 @@ class ClipbordIME : InputMethodService(), LifecycleOwner, ViewModelStoreOwner, S
                     onSettingsClick = {
                         val intent = Intent(this@ClipbordIME, MainActivity::class.java).apply {
                             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+                            putExtra(MainActivity.EXTRA_NAVIGATE_TO, MainActivity.ROUTE_SETTINGS)
                         }
                         startActivity(intent)
                     },
@@ -292,8 +309,6 @@ class ClipbordIME : InputMethodService(), LifecycleOwner, ViewModelStoreOwner, S
         startAndResumeLifecycle()
 
         // ✅ سیگنال ریست به Composable: برگرد به حالت KEYBOARD
-        // این خط باعث می‌شود اگر کاربر در حالت دیکشنری/ایموجی/کلیپ‌بورد بود
-        // و روی یک فیلد متنی جدید کلیک کرد، خودکار برگردد به کیبورد.
         inputSessionKey++
 
         isPasswordField = false

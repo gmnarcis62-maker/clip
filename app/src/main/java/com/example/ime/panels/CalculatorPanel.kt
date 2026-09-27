@@ -4,7 +4,6 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -64,6 +63,7 @@ data class CalcHistoryItem(
 @Composable
 fun CalculatorPanel(
     theme: KeyboardTheme,
+    modifier: Modifier = Modifier.fillMaxWidth().height(265.dp),
     onInsertResult: (String) -> Unit,
     onClose: () -> Unit
 ) {
@@ -99,13 +99,10 @@ fun CalculatorPanel(
     )
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(265.dp)
+        modifier = modifier
             .background(theme.surfaceColor, RoundedCornerShape(12.dp))
             .padding(6.dp)
     ) {
-        // Top Velvet Bar: Modes + Close
         Row(
             modifier = Modifier
                 .fillMaxWidth()
@@ -173,7 +170,6 @@ fun CalculatorPanel(
             }
         }
 
-        // Display screen
         Surface(
             shape = RoundedCornerShape(8.dp),
             color = theme.keyBackgroundColor,
@@ -250,7 +246,6 @@ fun CalculatorPanel(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Content: Keypad or History
         when (currentMode) {
             CalcMode.HISTORY -> {
                 LazyColumn(

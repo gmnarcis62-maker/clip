@@ -39,7 +39,8 @@ object AiConfig {
     const val WRITE_TIMEOUT_SECONDS = 30L
 
     /**
-     * Free Tier Daily Limit for non-VIP users
+     * ✅ محدودیت روزانه حذف شد — همه‌ی کاربران بی‌نهایت درخواست دارن.
+     * این مقدار دیگه استفاده نمی‌شه ولی برای سازگاری نگه داشته شده.
      */
-    const val FREE_DAILY_REQUEST_LIMIT = 5
+    const val FREE_DAILY_REQUEST_LIMIT = Int.MAX_VALUE
 }

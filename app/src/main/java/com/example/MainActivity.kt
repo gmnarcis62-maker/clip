@@ -16,24 +16,30 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
 
+        val initialRoute = intent?.getStringExtra(EXTRA_NAVIGATE_TO)
+
         val preferences = (application as? ClipbordApp)?.preferences ?: ClipbordApp.instance.preferences
 
         setContent {
             val darkMode by preferences.darkMode.collectAsState(initial = "SYSTEM")
 
             MyApplicationTheme(darkModeOption = darkMode) {
-                AppNavigation()
+                AppNavigation(initialRoute = initialRoute)
             }
         }
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        try {
-            val app = application as? ClipbordApp ?: ClipbordApp.instance
-            app.billingManager.handlePurchaseResult(requestCode, resultCode, data)
-        } catch (_: Exception) {
-            // Ignore errors here so the UI never crashes on purchase result handling
-        }
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+    }
+
+    // ✅ onActivityResult حذف شد — دیگه نیازی به پرداخت نیست
+
+    companion object {
+        const val EXTRA_NAVIGATE_TO = "navigate_to"
+        const val ROUTE_SETTINGS = "settings"
+        const val ROUTE_THEMES = "themes"
+        const val ROUTE_AI = "ai"
     }
 }

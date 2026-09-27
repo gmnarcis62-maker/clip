@@ -4,7 +4,7 @@ enum class KeyboardMode {
     TEXT,
     NUMBERS,
     SYMBOLS,
-    BIG_NUMBERS  // ✅ برای رمز دوم و کادرهای عددی حساس
+    BIG_NUMBERS
 }
 
 enum class KeyboardLanguage {
@@ -25,9 +25,7 @@ object KeyboardLayouts {
 
         val numberRow = digits.map { digit ->
             KeyItem(label = digit, output = digit, weight = 1.0f)
-        } + listOf(
-            KeyItem(label = "⌫", type = KeyType.BACKSPACE, weight = 1.3f)
-        )
+        }
 
         if (isShifted) {
             return listOf(
@@ -48,9 +46,9 @@ object KeyboardLayouts {
                     KeyItem(label = "{", output = "{"),
                     KeyItem(label = "}", output = "}"),
                     KeyItem(label = "،", output = "،"),
-                    KeyItem(label = ".", output = ".")
+                    KeyItem(label = "⌫", type = KeyType.BACKSPACE, weight = 1.3f)
                 ),
-                getBottomRow(isPersian = true, showHalfSpace = showHalfSpace)
+                getBottomRow(isPersian = true)
             )
         }
 
@@ -84,7 +82,7 @@ object KeyboardLayouts {
         }
 
         val row3 = listOf(
-            KeyItem(label = ".", output = ".", popupOptions = listOf(".", "،", "…", ":", "!")),
+            KeyItem(label = "⌫", type = KeyType.BACKSPACE, weight = 1.0f),
             KeyItem(label = "چ", output = "چ", popupOptions = listOf("ج", "چ")),
             KeyItem(label = "و", output = "و", popupOptions = listOf("ؤ", "و")),
             KeyItem(label = "پ", output = "پ", popupOptions = listOf("ب", "پ")),
@@ -102,7 +100,7 @@ object KeyboardLayouts {
             row1,
             row2,
             row3,
-            getBottomRow(isPersian = true, showHalfSpace = showHalfSpace)
+            getBottomRow(isPersian = true)
         )
     }
 
@@ -111,6 +109,11 @@ object KeyboardLayouts {
         isCapsLock: Boolean = false
     ): List<List<KeyItem>> {
         val uppercase = isShifted || isCapsLock
+
+        val numberRow = listOf("1", "2", "3", "4", "5", "6", "7", "8", "9", "0").map { num ->
+            KeyItem(label = num, output = num, weight = 1.0f)
+        }
+
         val row1Chars = if (uppercase) listOf("Q", "W", "E", "R", "T", "Y", "U", "I", "O", "P")
         else listOf("q", "w", "e", "r", "t", "y", "u", "i", "o", "p")
 
@@ -120,11 +123,7 @@ object KeyboardLayouts {
         val row3Chars = if (uppercase) listOf("Z", "X", "C", "V", "B", "N", "M")
         else listOf("z", "x", "c", "v", "b", "n", "m")
 
-        val row1 = row1Chars.mapIndexed { index, char ->
-            val num = "${(index + 1) % 10}"
-            KeyItem(label = char, subLabel = num, output = char, popupOptions = listOf(num, char))
-        }
-
+        val row1 = row1Chars.map { KeyItem(label = it, output = it) }
         val row2 = row2Chars.map { KeyItem(label = it, output = it) }
 
         val row3 = mutableListOf<KeyItem>()
@@ -134,10 +133,11 @@ object KeyboardLayouts {
         row3.add(KeyItem(label = "⌫", type = KeyType.BACKSPACE, weight = 1.35f))
 
         return listOf(
+            numberRow,
             row1,
             row2,
             row3,
-            getBottomRow(isPersian = false, showHalfSpace = false)
+            getBottomRow(isPersian = false)
         )
     }
 
@@ -219,10 +219,6 @@ object KeyboardLayouts {
         return listOf(row1, row2, row3, bottomRow)
     }
 
-    /**
-     * ✅ چیدمان اعداد درشت برای کادرهای حساس (رمز دوم بانکی، پین‌کد و...)
-     * گرید ۳×۴: ۱ ۲ ۳ / ۴ ۵ ۶ / ۷ ۸ ۹ / ⌫ ۰ ↵
-     */
     fun getBigNumbersRows(
         usePersianDigits: Boolean = true
     ): List<List<KeyItem>> {
@@ -244,28 +240,34 @@ object KeyboardLayouts {
         return listOf(row1, row2, row3, row4)
     }
 
-    private fun getBottomRow(isPersian: Boolean, showHalfSpace: Boolean): List<KeyItem> {
+    /**
+     * ✅ ردیف پایین
+     * - فارسی: ۱۲۳ | EN | 😀 | . | فاصله (نگه‌داشتن = نیم‌فاصله) | ، | ↵
+     * - انگلیسی: ?123 | فا | 😀 | Space | . | ↵
+     */
+    private fun getBottomRow(isPersian: Boolean): List<KeyItem> {
         val row = mutableListOf<KeyItem>()
         row.add(KeyItem(label = if (isPersian) "۱۲۳" else "?123", type = KeyType.MODE_SWITCH, weight = 1.15f))
         row.add(KeyItem(label = if (isPersian) "EN" else "فا", type = KeyType.LANG_SWITCH, weight = 0.95f))
         row.add(KeyItem(label = "😀", type = KeyType.EMOJI, weight = 0.95f))
 
-        if (isPersian && showHalfSpace) {
+        if (isPersian) {
             row.add(KeyItem(
-                label = "نیم‌فاصله",
-                subLabel = "‌",
-                output = "\u200C",
-                type = KeyType.HALF_SPACE,
-                weight = 1.4f
+                label = ".",
+                output = ".",
+                weight = 1.0f,
+                popupOptions = listOf(".", "،", "…", ":", "!")
             ))
+            // ✅ Space — نگه‌داشتن روی آن، نیم‌فاصله درج می‌کند
             row.add(KeyItem(
                 label = "فاصله",
+                subLabel = "نیم‌فاصله",
                 type = KeyType.SPACE,
-                weight = 3.2f
+                weight = 3.6f
             ))
         } else {
             row.add(KeyItem(
-                label = if (isPersian) "فاصله" else "Space",
+                label = "Space",
                 type = KeyType.SPACE,
                 weight = 4.4f
             ))

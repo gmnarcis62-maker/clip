@@ -4,6 +4,7 @@ import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
 import android.view.HapticFeedbackConstants
+import android.view.SoundEffectConstants
 import android.widget.Toast
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -27,6 +28,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
@@ -91,7 +93,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -184,8 +185,9 @@ fun KeyboardComposeView(
     clipboardItems: List<ClipboardEntity>,
     isPasswordField: Boolean = false,
     currentExtractedText: String = "",
-    // ✅ وقتی این مقدار عوض می‌شود، Composable خودکار برمی‌گردد به صفحه‌ی کیبورد
     inputSessionKey: Int = 0,
+    hapticEnabled: Boolean = true,
+    soundEnabled: Boolean = true,
     onKeyPress: (KeyItem) -> Unit,
     onKeyLongPress: (KeyItem) -> Unit = {},
     onSuggestionClick: (String) -> Unit,
@@ -207,8 +209,7 @@ fun KeyboardComposeView(
         }
     }
 
-    // ✅ هر بار کاربر روی یک فیلد متنی جدید کلیک می‌کند،
-    // خودکار از هر پنلی (دیکشنری، ایموجی، کلیپ‌بورد، AI...) برگرد به کیبورد اصلی
+    // ✅ وقتی کاربر روی یک فیلد متنی جدید کلیک می‌کند، برگرد به کیبورد اصلی
     LaunchedEffect(inputSessionKey) {
         if (inputSessionKey > 0) {
             activePanel = ActiveImePanel.KEYBOARD
@@ -234,7 +235,7 @@ fun KeyboardComposeView(
                 else onModeChange(KeyboardMode.TEXT)
             }
             KeyboardMode.BIG_NUMBERS -> {
-                // حالت اعداد درشت فقط برای رمز دوم — هیچ سوییچی قبول نمی‌کنه
+                // حالت اعداد درشت فقط برای رمز دوم
             }
         }
     }
@@ -286,6 +287,8 @@ fun KeyboardComposeView(
                             fontSizeScale = fontSizeScale,
                             persianNumbersDefault = persianNumbersDefault,
                             halfSpaceEnabled = halfSpaceEnabled,
+                            hapticEnabled = hapticEnabled,
+                            soundEnabled = soundEnabled,
                             onKeyPress = { key ->
                                 when (key.type) {
                                     KeyType.LANG_SWITCH -> onLanguageToggle()
@@ -502,6 +505,8 @@ fun KeyboardComposeView(
                                 fontSizeScale = fontSizeScale,
                                 persianNumbersDefault = persianNumbersDefault,
                                 halfSpaceEnabled = halfSpaceEnabled,
+                                hapticEnabled = hapticEnabled,
+                                soundEnabled = soundEnabled,
                                 onKeyPress = { key ->
                                     when (key.type) {
                                         KeyType.LANG_SWITCH -> onLanguageToggle()
@@ -530,7 +535,7 @@ fun KeyboardComposeView(
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Toolbar — نوار پیشنهادات بازطراحی‌شده (خلوت، آیکون‌محور، پریمیوم)
+// Toolbar
 // ═══════════════════════════════════════════════════════════════════
 
 @Composable
@@ -813,6 +818,8 @@ fun MainVelvetKeyLayout(
     fontSizeScale: Float,
     persianNumbersDefault: Boolean,
     halfSpaceEnabled: Boolean,
+    hapticEnabled: Boolean,
+    soundEnabled: Boolean,
     onKeyPress: (KeyItem) -> Unit,
     onKeyLongPress: (KeyItem) -> Unit,
     onInsertOutput: (String) -> Unit
@@ -858,30 +865,49 @@ fun MainVelvetKeyLayout(
 
     val bigFontScale = if (currentMode == KeyboardMode.BIG_NUMBERS) fontSizeScale * 1.35f else fontSizeScale
 
+    // ✅ جهت هر ردیف:
+    // - انگلیسی: کل کیبورد LTR (مثل کامپیوتر)
+    // - فارسی در حالت NUMBERS/SYMBOLS/BIG_NUMBERS: LTR (اعداد از چپ)
+    // - ردیف بالای اعداد در حالت TEXT فارسی: LTR
+    // - بقیه حالت‌ها: RTL (حروف فارسی از راست)
+    val forceKeyboardLtr = currentLanguage == KeyboardLanguage.ENGLISH ||
+            currentMode != KeyboardMode.TEXT
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .testTag("main_keyboard_grid"),
         verticalArrangement = Arrangement.spacedBy(verticalGap)
     ) {
-        rows.forEach { rowKeys ->
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(baseRowHeight),
-                horizontalArrangement = Arrangement.spacedBy(horizontalGap),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                rowKeys.forEach { key ->
-                    VelvetKeyItemView(
-                        key = key,
-                        theme = theme,
-                        fontSizeScale = bigFontScale,
-                        modifier = Modifier.weight(key.weight),
-                        onClick = { onKeyPress(key) },
-                        onLongClick = { onKeyLongPress(key) },
-                        onSelectOption = { option -> onInsertOutput(option) }
-                    )
+        rows.forEachIndexed { rowIndex, rowKeys ->
+            val isTopNumberRow = rowIndex == 0
+            val rowDirection = when {
+                forceKeyboardLtr -> LayoutDirection.Ltr
+                isTopNumberRow -> LayoutDirection.Ltr
+                else -> LayoutDirection.Rtl
+            }
+
+            CompositionLocalProvider(LocalLayoutDirection provides rowDirection) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(baseRowHeight),
+                    horizontalArrangement = Arrangement.spacedBy(horizontalGap),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    rowKeys.forEach { key ->
+                        VelvetKeyItemView(
+                            key = key,
+                            theme = theme,
+                            fontSizeScale = bigFontScale,
+                            hapticEnabled = hapticEnabled,
+                            soundEnabled = soundEnabled,
+                            modifier = Modifier.weight(key.weight),
+                            onClick = { onKeyPress(key) },
+                            onLongClick = { onKeyLongPress(key) },
+                            onSelectOption = { option -> onInsertOutput(option) }
+                        )
+                    }
                 }
             }
         }
@@ -889,7 +915,7 @@ fun MainVelvetKeyLayout(
 }
 
 // ═══════════════════════════════════════════════════════════════════
-// Key View — بازطراحی کامل (تخت، ظریف، بدون گرادیان)
+// Key View
 // ═══════════════════════════════════════════════════════════════════
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -898,6 +924,8 @@ fun VelvetKeyItemView(
     key: KeyItem,
     theme: KeyboardTheme,
     fontSizeScale: Float,
+    hapticEnabled: Boolean,
+    soundEnabled: Boolean,
     modifier: Modifier = Modifier,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
@@ -915,13 +943,19 @@ fun VelvetKeyItemView(
 
     val isCharacterKey = key.type == KeyType.CHARACTER || key.type == KeyType.HALF_SPACE
 
-    // فیدبک لمسی ظریف
+    // ✅ فیدبک لمسی + صوتی — مستقیم از خود View
+    // این روش مطمئن‌تر از HapticAndSoundFeedback است و در IME کار می‌کند
     LaunchedEffect(isPressed) {
         if (isPressed) {
-            view.performHapticFeedback(
-                HapticFeedbackConstants.KEYBOARD_TAP,
-                HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
-            )
+            if (hapticEnabled) {
+                view.performHapticFeedback(
+                    HapticFeedbackConstants.KEYBOARD_TAP,
+                    HapticFeedbackConstants.FLAG_IGNORE_GLOBAL_SETTING
+                )
+            }
+            if (soundEnabled) {
+                view.playSoundEffect(SoundEffectConstants.CLICK)
+            }
         }
     }
 
@@ -947,7 +981,6 @@ fun VelvetKeyItemView(
         }
     }
 
-    // انیمیشن‌ها: سریع، ظریف، اسنپی
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.96f else 1f,
         animationSpec = spring(dampingRatio = 0.80f, stiffness = 1200f),
@@ -966,7 +999,6 @@ fun VelvetKeyItemView(
     val isBigNumber = key.label.length == 1 && key.label[0].isDigit() ||
             key.label in listOf("۱","۲","۳","۴","۵","۶","۷","۸","۹","۰")
 
-    // ✅ رنگ تخت — بدون گرادیان
     val keyColor = when {
         isAction -> theme.accentColor
         isSpecial -> theme.specialKeyBackgroundColor
@@ -1115,7 +1147,6 @@ fun VelvetKeyItemView(
             }
         }
 
-        // ─── پاپ‌آپ انتخاب‌های جایگزین (long press) ───
         if (showPopupDialog && key.popupOptions.isNotEmpty()) {
             Popup(
                 alignment = Alignment.TopCenter,
@@ -1158,7 +1189,6 @@ fun VelvetKeyItemView(
             }
         }
 
-        // ─── پیش‌نمایش حرف (فقط بعد از نگه داشتن) ───
         if (showPreview && !showPopupDialog && isCharacterKey) {
             Popup(
                 alignment = Alignment.TopCenter,

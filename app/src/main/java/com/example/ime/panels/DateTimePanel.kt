@@ -42,6 +42,7 @@ data class DateTimeFormatItem(
 @Composable
 fun DateTimePanel(
     theme: KeyboardTheme,
+    modifier: Modifier = Modifier.fillMaxWidth().height(250.dp),
     onInsertText: (String) -> Unit,
     onClose: () -> Unit
 ) {
@@ -68,13 +69,10 @@ fun DateTimePanel(
     }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(250.dp)
+        modifier = modifier
             .background(theme.surfaceColor, RoundedCornerShape(12.dp))
             .padding(8.dp)
     ) {
-        // Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -107,7 +105,6 @@ fun DateTimePanel(
             modifier = Modifier.fillMaxSize(),
             verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            // ---- Shamsi section ----
             item {
                 SectionHeader(title = "🇮🇷 هجری شمسی", theme = theme)
             }
@@ -117,7 +114,6 @@ fun DateTimePanel(
 
             item { Spacer(modifier = Modifier.height(6.dp)) }
 
-            // ---- Gregorian section ----
             item {
                 SectionHeader(title = "🌍 میلادی (Gregorian)", theme = theme)
             }

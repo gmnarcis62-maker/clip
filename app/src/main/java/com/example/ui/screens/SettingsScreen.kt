@@ -2,10 +2,14 @@ package com.example.ui.screens
 
 import android.widget.Toast
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -39,6 +43,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
@@ -50,6 +55,8 @@ import androidx.compose.ui.unit.sp
 import com.example.ClipbordApp
 import com.example.ai.data.AiConfig
 import com.example.domain.shamsi.PersianDateUtils
+import com.example.themes.KeyboardTheme
+import com.example.themes.ThemeManager
 import com.example.ui.components.ClipbordTopBar
 import com.example.ui.components.PersianCard
 import com.example.ui.components.SectionTitle
@@ -68,6 +75,7 @@ fun SettingsScreen(
 
     val isVip by preferences.isVip.collectAsState(initial = false)
     val darkMode by preferences.darkMode.collectAsState(initial = "SYSTEM")
+    val themeId by preferences.themeId.collectAsState(initial = "turquoise")
     val heightRatio by preferences.keyboardHeightRatio.collectAsState(initial = 1.0f)
     val fontSizeScale by preferences.fontSizeScale.collectAsState(initial = 1.0f)
     val vibrationEnabled by preferences.vibrationEnabled.collectAsState(initial = true)
@@ -79,7 +87,6 @@ fun SettingsScreen(
     val halfSpaceEnabled by preferences.halfSpaceEnabled.collectAsState(initial = true)
     val voiceTypingEnabled by preferences.voiceTypingEnabled.collectAsState(initial = true)
 
-    // AI States
     val aiEnabled by preferences.aiEnabled.collectAsState(initial = true)
     val aiButtonVisible by preferences.aiButtonVisible.collectAsState(initial = true)
     val aiTone by preferences.aiDefaultTone.collectAsState(initial = "NEUTRAL")
@@ -172,14 +179,13 @@ fun SettingsScreen(
                     }
                 }
 
-                // 1. Appearance, Size & Font
+                // Appearance, Size & Font with LIVE PREVIEW
                 item {
                     PersianCard {
                         SectionTitle(title = "ظاهر، اندازه و چیدمان", icon = Icons.Default.Palette)
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // Theme Shortcut
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
@@ -199,7 +205,6 @@ fun SettingsScreen(
 
                         Spacer(modifier = Modifier.height(14.dp))
 
-                        // Dark Mode selector
                         Text("حالت نمایش:", fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                             listOf(
@@ -221,7 +226,21 @@ fun SettingsScreen(
 
                         Spacer(modifier = Modifier.height(14.dp))
 
-                        // Keyboard Height Slider (expanded range)
+                        // ✅ پیش‌نمایش زنده‌ی کیبورد
+                        Text(
+                            "پیش‌نمایش زنده:",
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 13.sp
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        KeyboardLivePreview(
+                            heightRatio = heightRatio,
+                            fontSizeScale = fontSizeScale,
+                            themeId = themeId
+                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+
+                        // Keyboard Height Slider
                         Text(
                             "ارتفاع کیبورد: ${PersianDateUtils.toPersianDigits((heightRatio * 100).toInt())}%",
                             fontWeight = FontWeight.SemiBold,
@@ -240,7 +259,6 @@ fun SettingsScreen(
 
                         Spacer(modifier = Modifier.height(8.dp))
 
-                        // Font Size Slider (NEW)
                         Text(
                             "اندازه فونت کیبورد: ${PersianDateUtils.toPersianDigits((fontSizeScale * 100).toInt())}%",
                             fontWeight = FontWeight.SemiBold,
@@ -260,7 +278,7 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.height(4.dp))
 
                         Text(
-                            "💡 با تغییر این دو اسلایدر، می‌توانید ارتفاع و اندازه‌ی نوشته‌های کیبورد را متناسب با سلیقه و اندازه‌ی صفحه‌ی گوشی خود تنظیم کنید.",
+                            "💡 با تغییر اسلایدرها، پیش‌نمایش بالا به‌صورت زنده به‌روزرسانی می‌شود تا دقیقاً ببینید کیبورد در گوشی شما چه اندازه‌ای خواهد شد.",
                             color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 11.sp,
                             lineHeight = 15.sp
@@ -268,7 +286,7 @@ fun SettingsScreen(
                     }
                 }
 
-                // 2. Typing & Predictions
+                // Typing & Predictions
                 item {
                     PersianCard {
                         SectionTitle(title = "تایپ هوشمند و پیش‌بینی متن", icon = Icons.Default.Psychology)
@@ -311,7 +329,7 @@ fun SettingsScreen(
                     }
                 }
 
-                // 3. Sound & Vibration
+                // Sound & Vibration
                 item {
                     PersianCard {
                         SectionTitle(title = "صدا و لرزش هنگام تایپ", icon = Icons.Default.Vibration)
@@ -350,7 +368,7 @@ fun SettingsScreen(
                     }
                 }
 
-                // 4. Voice Typing
+                // Voice Typing
                 item {
                     PersianCard {
                         SectionTitle(title = "تایپ صوتی و گفتاری", icon = Icons.Default.TextFields)
@@ -366,7 +384,7 @@ fun SettingsScreen(
                     }
                 }
 
-                // Reset Settings Button
+                // Reset
                 item {
                     Button(
                         onClick = {
@@ -425,6 +443,124 @@ fun SettingToggleRow(
                 checkedThumbColor = Color(0xFF07211E),
                 checkedTrackColor = PrimaryCyan
             )
+        )
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════
+// ✅ پیش‌نمایش زنده‌ی کیبورد — با هر تغییر اسلایدر به‌روز می‌شود
+// ═══════════════════════════════════════════════════════════════════
+@Composable
+private fun KeyboardLivePreview(
+    heightRatio: Float,
+    fontSizeScale: Float,
+    themeId: String
+) {
+    val theme: KeyboardTheme = ThemeManager.getThemeById(themeId)
+
+    // ارتفاع کل پیش‌نمایش متناسب با heightRatio
+    val previewHeight = (170 * heightRatio).dp
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(previewHeight)
+            .clip(RoundedCornerShape(12.dp))
+            .background(theme.backgroundColor)
+            .border(1.dp, theme.keyBorderColor, RoundedCornerShape(12.dp))
+            .padding(6.dp)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize(),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            // ردیف اعداد (فقط نمایشی)
+            PreviewRow(
+                labels = listOf("۱", "۲", "۳", "۴", "۵", "۶", "۷", "۸", "۹", "۰"),
+                theme = theme,
+                fontSizeScale = fontSizeScale * 0.9f,
+                weight = 1f
+            )
+
+            // ردیف اول حروف
+            PreviewRow(
+                labels = listOf("ض", "ص", "ث", "ق", "ف", "غ", "ع", "ه", "خ", "ح"),
+                theme = theme,
+                fontSizeScale = fontSizeScale
+            )
+
+            // ردیف دوم
+            PreviewRow(
+                labels = listOf("ش", "س", "ی", "ب", "ل", "ا", "ت", "ن", "م", "ک"),
+                theme = theme,
+                fontSizeScale = fontSizeScale
+            )
+
+            // ردیف سوم
+            PreviewRow(
+                labels = listOf("ظ", "ط", "ز", "ر", "ذ", "د", "پ", "و", "چ"),
+                theme = theme,
+                fontSizeScale = fontSizeScale
+            )
+
+            // ردیف پایین
+            PreviewRow(
+                labels = listOf("۱۲۳", "EN", "😀", "نیم‌فاصله", "فاصله", "،", "↵"),
+                theme = theme,
+                fontSizeScale = fontSizeScale * 0.85f
+            )
+        }
+    }
+}
+
+@Composable
+private fun PreviewRow(
+    labels: List<String>,
+    theme: KeyboardTheme,
+    fontSizeScale: Float,
+    weight: Float = 1f
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .weight(weight),
+        horizontalArrangement = Arrangement.spacedBy(3.dp)
+    ) {
+        labels.forEach { label ->
+            PreviewKey(
+                label = label,
+                theme = theme,
+                fontSizeScale = fontSizeScale
+            )
+        }
+    }
+}
+
+@Composable
+private fun RowScope.PreviewKey(
+    label: String,
+    theme: KeyboardTheme,
+    fontSizeScale: Float
+) {
+    Box(
+        modifier = Modifier
+            .weight(1f)
+            .fillMaxHeight()
+            .clip(RoundedCornerShape(6.dp))
+            .background(theme.keyBackgroundColor)
+            .border(
+                width = 0.5.dp,
+                color = theme.keyBorderColor,
+                shape = RoundedCornerShape(6.dp)
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = label,
+            color = theme.keyTextColor,
+            fontSize = (13 * fontSizeScale).sp,
+            fontWeight = FontWeight.Medium,
+            maxLines = 1
         )
     }
 }

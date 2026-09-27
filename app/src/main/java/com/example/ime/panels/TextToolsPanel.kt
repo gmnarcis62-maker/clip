@@ -39,6 +39,7 @@ import com.example.themes.KeyboardTheme
 fun TextToolsPanel(
     theme: KeyboardTheme,
     currentText: String,
+    modifier: Modifier = Modifier.fillMaxWidth().height(250.dp),
     onReplaceText: (String) -> Unit,
     onClose: () -> Unit
 ) {
@@ -64,13 +65,10 @@ fun TextToolsPanel(
     )
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(250.dp)
+        modifier = modifier
             .background(theme.surfaceColor, RoundedCornerShape(12.dp))
             .padding(8.dp)
     ) {
-        // Header
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -99,7 +97,6 @@ fun TextToolsPanel(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Text Stats Bar
         Surface(
             shape = RoundedCornerShape(8.dp),
             color = theme.keyBackgroundColor,

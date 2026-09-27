@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -22,7 +21,6 @@ import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Mood
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
@@ -43,23 +41,21 @@ import com.example.themes.KeyboardTheme
 @Composable
 fun KaomojiSymbolsPanel(
     theme: KeyboardTheme,
+    modifier: Modifier = Modifier.fillMaxWidth().height(250.dp),
     onInsertText: (String) -> Unit,
     onClose: () -> Unit
 ) {
-    var isKaomojiMode by remember { mutableIntStateOf(0) } // 0: Kaomoji, 1: Symbols
+    var isKaomojiMode by remember { mutableIntStateOf(0) }
     var selectedCategoryIndex by remember { mutableIntStateOf(0) }
 
     val kaomojiCats = KaomojiAndSymbolsData.KAOMOJI_CATEGORIES
     val symbolCats = KaomojiAndSymbolsData.SYMBOL_CATEGORIES
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(250.dp)
+        modifier = modifier
             .background(theme.surfaceColor, RoundedCornerShape(12.dp))
             .padding(8.dp)
     ) {
-        // Header with Kaomoji vs Symbols toggle
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -110,7 +106,6 @@ fun KaomojiSymbolsPanel(
 
         Spacer(modifier = Modifier.height(4.dp))
 
-        // Categories tabs
         val currentCategories = if (isKaomojiMode == 0) kaomojiCats.map { it.title } else symbolCats.map { it.title }
         LazyRow(
             horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -137,7 +132,6 @@ fun KaomojiSymbolsPanel(
 
         Spacer(modifier = Modifier.height(6.dp))
 
-        // Items Grid
         if (isKaomojiMode == 0) {
             val kaomojis = kaomojiCats.getOrNull(selectedCategoryIndex)?.items ?: emptyList()
             LazyVerticalGrid(
